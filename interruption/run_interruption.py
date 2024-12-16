@@ -37,9 +37,7 @@ PATHING_DICT = {
     "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR
 }
 
-#Time formats for stat / stop arguments
-#TODO reformat accepted times for compute gap as it's confusing DOY format with seconds for month and day without seconds.
-TIME_FORMATS = ["%Y:%j:%H:%M:%S", "%Y:%j:%H:%M", "%Y:%m:%d:%H:%M:%S", "%Y:%m:%d:%H:%M"]
+TIME_FORMATS = ["%Y:%j:%H:%M:%S", "%Y:%m:%d:%H:%M:%S"] #: Allowable time formats for recording an interruption from the command line
 
 #
 # --- extracting formatted data sets, compute statistics, then plot for each data category
@@ -81,12 +79,24 @@ import goes_data_set as goes # noqa: E402
 
 
 # -------------------------------------------------------------------------------------
-# -- compute_gap: process stat / stop time arguments                                 --
+# -- generate_event_dict: process stat / stop time arguments                                 --
 # -------------------------------------------------------------------------------------
-def compute_gap(start, stop, name=None):
+def generate_event_dict(start, stop, name=None):
+    """Intake string-formatted time and output interruption data values.
+
+    :param start: Start time argument from the command line.
+    :type start: str
+    :param stop: Stop time argument from the command line.
+    :type stop: str
+    :param name: Name of interruption event, parameter defaults to None which sets the name to the start time.
+    :type name: str, optional
+    :raises ValueError: if the provided starting or stopping times are not one of the formats listed in TIME_FORMATS
+    :return: Dictionary named ``event_data`` which stores interruption data.
+    :rtype: dict(str, datetime or float or str)
+    
     """
-    Intake string-formatted time and output interruption data values
-    """
+    tstart = None
+    tstop = None
     for form in TIME_FORMATS:
         try:
             tstart = datetime.strptime(start, form)
@@ -99,6 +109,10 @@ def compute_gap(start, stop, name=None):
             break
         except ValueError:
             pass
+    if tstart is None:
+        raise ValueError(f"Start time must be in one of the following formats: {TIME_FORMATS}")
+    if tstop is None:
+        raise ValueError(f"Stop time must be in one of the following formats: {TIME_FORMATS}")
     if name is None:
         name = tstart.strftime("%Y%m%d")
 
@@ -119,15 +133,16 @@ def compute_gap(start, stop, name=None):
     }
     return out
 # -------------------------------------------------------------------------------------
-# -- supplemental_files: write relevant info to a few supplamental files             --
+# -- supplemental_files: write relevant info to a few supplemental files             --
 # -------------------------------------------------------------------------------------
 def supplemental_files(event_data, pathing_dict):
-    """
-    Write supplemental radiation event information
-    input:  event_data ---  dictionary of radiation shutdown event values
-            pathing_dict --- dictionary of pathing variables
-    output: none but write to
-            <data_dir>/rad_zone_list
+    """Write supplemental radiation event information to additional files
+
+    :param event_data: 
+    :type event_data: dict
+    :param pathing_dict: _description_
+    :type pathing_dict: dict
+    :File Out:
     """
     rad_zones_shutdown = {}
     #
@@ -165,17 +180,6 @@ def supplemental_files(event_data, pathing_dict):
 
 
 def run_interrupt(event_data, pathing_dict):
-    """
-    run all sci run plot routines
-    input:  event_data ---  dictionary of radiation shutdown event values
-            pathing_dict --- dictionary of pathing variables
-    output: <plot_dir>/*.png    --- ace data plot
-            <ephin_dir>/*.png   --- ephin data plot
-            <goes_dir>/*.png    --- goes data plot
-            <xmm_dir>/*.png     --- xmm data plot
-            <html_dir>/*.html   --- html page for that interruption
-            <web_dir>/rad_interrupt.html    --- main page
-    """
     print(f"Generating: {event_data['name']}")
     #supplemental_files(event_data, pathing_dict)
     
@@ -225,10 +229,10 @@ if __name__ == "__main__":
         help="Directory path to determine output location.",
     )
     parser.add_argument(
-        "--start", required=True, help="Start time of radiation shutdown."
+        "--start", required=True, help=f"Start time of radiation shutdown. Format: {TIME_FORMATS}"
     )
     parser.add_argument(
-        "--stop", required=True, help="Stop time of radiation shutdown."
+        "--stop", required=True, help=f"Stop time of radiation shutdown. Format: {TIME_FORMATS}"
     )
     parser.add_argument(
         "-n",
@@ -245,7 +249,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    event_data = compute_gap(args.start, args.stop, name=args.name)
+    event_data = generate_event_dict(args.start, args.stop, name=args.name)
     event_data["mode"] = args.run
 
     if args.mode == "test":

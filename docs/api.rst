@@ -1,8 +1,35 @@
+###
 API
-===
+###
 
-.. autosummary::
-    :toctree: _generated
-    :recursive:
-    
-    interruption
+************
+Interruption
+************
+
+This project generates the science interruption reports used by MTA to document
+an interruption in the Chandra mission plan. 
+
+Reports can be found here.
+
+https://cxc.cfa.harvard.edu/mta/RADIATION_new/mta_interrupt/index.html
+
+Run Interruption
+================
+
+.. automodule:: run_interruption
+    :members:
+    :undoc-members:
+
+HRC Data Set
+============
+
+.. automodule:: hrc_data_set
+    :members:
+    :undoc-members:
+
+GOES Data Set
+=============
+
+.. automodule:: goes_data_set
+    :members:
+    :undoc-members:
