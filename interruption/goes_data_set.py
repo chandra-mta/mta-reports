@@ -1,10 +1,14 @@
 #!/proj/sot/ska3/flight/bin/python
 
-#
-# --- goes_data_set.py extract goes data, compute stats, and plot values
-# --- author w. aaron (william.aaron@cfa.harvard.edu)
-# --- last update: Nov 12, 2024
-#
+"""
+**goes_data_set.py** Extract GOES data, compute statistics, and plot values.
+
+:Author: W. Aaron (william.aaron@cfa.harvard.edu)
+:Last Updated: Dec 17 , 2024
+:Note: This script is designed to be a submodule of **run_interruption.py**
+
+"""
+
 import os
 import numpy as np
 from datetime import datetime, timedelta
@@ -42,12 +46,18 @@ GOES_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Interru
 TIME_FORMAT = "%Y:%m:%d:%H:%M"
 
 def goes_data_set(event_data, pathing_dict):
-    """
-    Intake data from the Space Weather GOES Data archive. 
+    """Intakes data from the Space Weather GOES data archive in ``SPACE_WEATHER_DIR`` into an ``astropy.table`` and uses data for plotting and statistics.
+
+    :param event_data: A dictionary which stores interruption data.
+    :type event_data: dict(str, datetime or float or str)
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+    :raises ValueError: If the ``event_data['tstart']`` starting time or ``event_data['tstop']`` stopping time data entires cannot be found in the Space Weather GOES data archive.
+
     """
     data_file = os.path.join(pathing_dict['SPACE_WEATHER_DIR'], 'GOES', 'Data', 'goes_data_r.txt')
     #
-    # --- Search the data_file via grep for the 
+    # --- Search the data_file via grep for the interruption time interval
     #
     time_start = (event_data['tstart'] - timedelta(days=2))
     time_stop = (event_data['tstop'] + timedelta(days=2))
@@ -63,7 +73,7 @@ def goes_data_set(event_data, pathing_dict):
         except subprocess.CalledProcessError:
             time_start += timedelta(minutes=5)
         if time_start > time_stop:
-            raise ValueError(f"cannot find start time line in {data_file}")
+            raise ValueError(f"Cannot find start time line in {data_file}.")
     #
     # --- Find data line for stop
     #
@@ -74,7 +84,7 @@ def goes_data_set(event_data, pathing_dict):
         except subprocess.CalledProcessError:
             time_stop -= timedelta(minutes=5)
         if time_stop < time_start:
-            raise ValueError(f"cannot find stop time line in {data_file}")
+            raise ValueError(f"Cannot find stop time line in {data_file}.")
     #
     # --- Once the data indices have been found, load that selection into an astropy table
     #
@@ -82,8 +92,17 @@ def goes_data_set(event_data, pathing_dict):
     write_goes_files(goes_table, event_data, pathing_dict)
 
 def write_goes_files(goes_table, event_data, pathing_dict):
-    """
-    Write data and stats to human-reference text file
+    """Write GOES data and statistics to human-reference text file.
+
+    :param goes_table: GOES data table read from ``SPACE_WEATHER_DIR/GOES/Data``.
+    :type goes_table: astropy.table.Table
+    :param event_data: A dictionary which stores interruption data.
+    :type event_data: dict(str, datetime or float or str)
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+    :File Out: Writes the ``<event_name>_hrc.txt`` data table to the two ``OUT_WEB_DIR/Data_dir`` directories, 
+        and writes the ``<event_name>_hrc_stat`` statistics table to the two ``OUT_WEB_DIR/Stat_dir`` directories.
+
     """
     #
     # --- Write Data File

@@ -14,23 +14,23 @@ sys.path.insert(1, f"{Path(__file__).resolve().parents[1]}/interruption")
 project = 'mta-reports'
 copyright = '2024, William Aaron'
 author = 'William Aaron'
-release = '0.1'
+release = '0.3'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-autodoc_member_order = 'bysource'
+autodoc_member_order = 'groupwise'
 
 extensions = [
     'sphinx.ext.duration',
     'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx.ext.viewcode',
 ]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
 
 
 # -- Options for HTML output -------------------------------------------------
