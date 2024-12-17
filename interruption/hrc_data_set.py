@@ -14,7 +14,7 @@ import numpy as np
 from datetime import datetime, timedelta
 from cxotime import CxoTime, convert_time_format
 from cheta import fetch
-from kadi import events
+from kadi.events import rad_zones
 from Ska.Matplotlib import plot_cxctime
 import matplotlib.pyplot as plt
 import shutil
@@ -166,7 +166,7 @@ def plot_hrc_data(fetch_result, event_data, pathing_dict):
     :File Out: Writes the ``<event_name>_hrc.png`` plots to the two ``OUT_WEB_DIR/Data_dir`` directories.
 
     """
-    rad_zones = events.rad_zones.filter(
+    zones = rad_zones.filter(
         start=event_data["tstart"] - timedelta(days=2),
         stop=event_data["tstop"] + timedelta(days=2),
     ).table
@@ -186,7 +186,7 @@ def plot_hrc_data(fetch_result, event_data, pathing_dict):
     plt.axhline(4.80, color="red", linestyle="--", lw=1.0)  # Violation Threshold
     plt.axvline(event_data["tstart"], color="red", lw=2)  # Event Start
     plt.axvline(event_data["tstop"], color="red", lw=2)  # Event Ending
-    for row in rad_zones:
+    for row in zones:
         start = datetime.strptime(str(row["start"]).split(".")[0], "%Y:%j:%H:%M:%S")
         stop = datetime.strptime(str(row["stop"]).split(".")[0], "%Y:%j:%H:%M:%S")
         plt.plot([start, stop], [3, 3], color="purple", lw=8)  # Radiation Zone

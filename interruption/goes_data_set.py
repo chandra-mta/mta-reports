@@ -13,8 +13,6 @@ import os
 import numpy as np
 from datetime import datetime, timedelta
 from cxotime import CxoTime, convert_time_format
-from cheta import fetch
-from kadi import events
 from Ska.Matplotlib import plot_cxctime
 import matplotlib.pyplot as plt
 import shutil
@@ -110,7 +108,6 @@ def write_goes_files(goes_table, event_data, pathing_dict):
     line = GOES_DATA_HEADER.replace("#LSTART",event_data['tstart'].strftime(TIME_FORMAT))
     for row in goes_table:
         substring = f"{row['Time']}\t\t"
-        subset = []
         for channel in GOES_CHANNEL_SELECT:
             if channel == 'HRC_Proxy':
                 substring += f"{row[channel]}"

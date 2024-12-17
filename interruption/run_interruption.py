@@ -12,7 +12,7 @@ import sys
 import os
 import numpy as np
 from cxotime import CxoTime
-from kadi import events
+from kadi.events import rad_zones
 from datetime import datetime
 import argparse
 import getpass
@@ -131,10 +131,10 @@ def generate_event_dict(start, stop, name=None):
     chandra_start = CxoTime(tstart.strftime("%Y:%j:%H:%M:%S"))
     chandra_stop = CxoTime(tstop.strftime("%Y:%j:%H:%M:%S"))
 
-    rad_zones = events.rad_zones.filter(start=chandra_start, stop=chandra_stop).table
-    rad_zones_duration_secs = np.sum(rad_zones["dur"])
+    zones = rad_zones.filter(start=chandra_start, stop=chandra_stop).table
+    zones_duration_secs = np.sum(zones["dur"])
     science_time_lost_secs = (
-        chandra_stop.secs - chandra_start.secs - rad_zones_duration_secs
+        chandra_stop.secs - chandra_start.secs - zones_duration_secs
     )
 
     out = {
@@ -159,7 +159,7 @@ def supplemental_files(event_data, pathing_dict):
     :File Out: Writes the ``rad_zone_list`` file containing radiation zone information to the ``DATA_DIR`` directory.
 
     """
-    rad_zones_shutdown = {}
+    zones_shutdown = {}
     #
     # --- Pulls current list to avoid re-recording the information
     #
@@ -169,23 +169,23 @@ def supplemental_files(event_data, pathing_dict):
         with open(ifile) as f:
             data = [line.strip().split() for line in f.readlines()]
         for entry in data:
-            rad_zones_shutdown[entry[0]] = entry[1].split(":")
+            zones_shutdown[entry[0]] = entry[1].split(":")
 
     chandra_start = CxoTime(event_data["tstart"].strftime("%Y:%j:%H:%M:%S"))
     chandra_stop = CxoTime(event_data["tstop"].strftime("%Y:%j:%H:%M:%S"))
-    table = events.rad_zones.filter(
+    table = rad_zones.filter(
         start=chandra_start.secs - (3 * 86400.0), stop=chandra_stop.secs + (5 * 86400.0)
     ).table
     event_zones = []
     for row in table:
         event_zones.append((round(row["tstart"], 0), round(row["tstop"], 0)))
-    rad_zones_shutdown[event_data["name"]] = event_zones
+    zones_shutdown[event_data["name"]] = event_zones
 
     #
     # --- Write out rad_zone_list
     #
     string = ""
-    for k, v in sorted(rad_zones_shutdown.items()):
+    for k, v in sorted(zones_shutdown.items()):
         string += f"{k}\t{':'.join([str(y) for y in v])}\n"
     with open(ifile, "w") as file:
         file.write(string)
