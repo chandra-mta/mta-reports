@@ -65,6 +65,7 @@ def hrc_data_set(event_data, pathing_dict):
         See :func:`~interruption.goes_data_set.plot_goes_data` for details on the GOES plotting of the HRC shield rate proxy.
 
     """
+    print("HRC Data Set")
     fetch_result = fetch.MSIDset(
         MSIDS,
         start=event_data["tstart"] - timedelta(days=2),
@@ -163,7 +164,7 @@ def plot_hrc_data(fetch_result, event_data, pathing_dict):
     :type event_data: dict(str, datetime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
-    :File Out: Writes the ``<event_name>_hrc.png`` plots to the two ``OUT_WEB_DIR/Data_dir`` directories.
+    :File Out: Writes the ``<event_name>_hrc.png`` plots to the two ``OUT_WEB_DIR/HRC_plot`` directories.
 
     """
     zones = rad_zones.filter(

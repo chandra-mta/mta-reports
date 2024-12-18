@@ -207,16 +207,14 @@ def run_interrupt(event_data, pathing_dict):
 
     """
     print(f"Generating: {event_data['name']}")
-    supplemental_files(event_data, pathing_dict)
+    #supplemental_files(event_data, pathing_dict)
     #
     # --- HRC data set
     #
-    print("HRC Data Set")
-    hrc.hrc_data_set(event_data, pathing_dict)
+    #hrc.hrc_data_set(event_data, pathing_dict)
     #
     # ---- GOES data set
     #
-    print("GOES")
     goes.goes_data_set(event_data, pathing_dict)
     #
     # ---- plot other radiation data (from NOAA)

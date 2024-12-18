@@ -12,9 +12,9 @@
 import os
 import numpy as np
 from datetime import datetime, timedelta
-from cxotime import CxoTime, convert_time_format
-from Ska.Matplotlib import plot_cxctime
+from kadi.events import rad_zones
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import shutil
 from astropy.io import ascii
 import subprocess
@@ -43,6 +43,16 @@ GOES_DATA_HEADER = f"Science Run Interruption: #LSTART\n\nTime\t\t{subhead}\n{'-
 GOES_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Interruption Started\n{'-'*95}\n"
 TIME_FORMAT = "%Y:%m:%d:%H:%M"
 
+#
+#--- Plot Keyword Arguments
+#
+PLOT_KWARGS = {
+    "linestyle": "",
+    "marker": ".",
+    "markersize": 0.5,
+    "color": "black",
+}
+
 def goes_data_set(event_data, pathing_dict):
     """Intakes data from the Space Weather GOES data archive in ``SPACE_WEATHER_DIR`` into an ``astropy.table`` and uses data for plotting and statistics.
 
@@ -53,6 +63,7 @@ def goes_data_set(event_data, pathing_dict):
     :raises ValueError: If the ``event_data['tstart']`` starting time or ``event_data['tstop']`` stopping time data entires cannot be found in the Space Weather GOES data archive.
 
     """
+    print("GOES Data Set")
     data_file = os.path.join(pathing_dict['SPACE_WEATHER_DIR'], 'GOES', 'Data', 'goes_data_r.txt')
     #
     # --- Search the data_file via grep for the interruption time interval
@@ -88,6 +99,7 @@ def goes_data_set(event_data, pathing_dict):
     #
     goes_table = ascii.read(data_file, data_start = data_start - 3, data_end = data_end - 2)
     write_goes_files(goes_table, event_data, pathing_dict)
+    plot_goes_data(goes_table, event_data, pathing_dict)
 
 def write_goes_files(goes_table, event_data, pathing_dict):
     """Write GOES data and statistics to human-reference text file.
@@ -154,3 +166,95 @@ def write_goes_files(goes_table, event_data, pathing_dict):
         f.write(line)
     if ifile != ifile2:
         shutil.copy(ifile,ifile2)
+
+def plot_goes_data(goes_table, event_data, pathing_dict):
+    """Create a plot of GOES channel data and HRC proxy.
+
+    :param goes_table: GOES data table read from ``SPACE_WEATHER_DIR/GOES/Data``.
+    :type goes_table: astropy.table.Table
+    :param event_data: A dictionary which stores interruption data.
+    :type event_data: dict(str, datetime or float or str)
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+    :File Out: Writes the ``<event_name>_goes.png`` plots to the two ``OUT_WEB_DIR/GOES_plot`` directories.
+
+    """
+    zones = rad_zones.filter(
+        start=event_data["tstart"] - timedelta(days=2),
+        stop=event_data["tstop"] + timedelta(days=2),
+    ).table
+    fig = plt.figure(figsize=(10, 6.7))
+    fig.clf()
+
+    convert = lambda x: datetime.strptime(x,GOES_DATA_TIME_FORMAT)  # noqa: E731
+    s2d = np.vectorize(convert)
+    times = s2d(goes_table['Time'].data)
+    #
+    #--- Reference Information
+    #
+    n_axes = len(GOES_CHANNEL_SELECT)
+    ylab = "Log$_{10}$"
+    date_format = mdates.DateFormatter('%j')
+    deltatime = event_data["tstop"] - event_data["tstart"]
+
+    for i, channel in enumerate(GOES_CHANNEL_SELECT):
+        if i == 0:
+            ax1 = fig.add_subplot(n_axes, 1, 1)
+            ax = ax1
+        else:
+            ax = fig.add_subplot(n_axes, 1, i + 1, sharex=ax1)
+        ax.xaxis.set_major_formatter(date_format)
+        #
+        #--- if not the last plot, turn of visibility of xtick labels
+        #
+        if i != n_axes - 1:
+            ymin  = -3
+            ymax  =  5
+            int_label = 4
+            for label in ax.get_xticklabels():
+                label.set_visible(False)
+        else:
+            ymin = 1.5
+            ymax = 6.5
+            int_label = 5.5
+            ax.set_xlabel('Day of Year', fontsize = 9)
+            
+        ax.set_ylim(ymin, ymax, auto=False)
+        ax.grid()
+        #
+        #--- Map values to a logarithmic scale, deselecting values of zero
+        #
+        m = goes_table[GOES_CHANNEL_SELECT[i]].data
+        mapped_vals = np.log10(m, out=np.zeros_like(m, dtype=float), where=(m > 0))
+        sel = mapped_vals != 0
+        plt.plot(times[sel], mapped_vals[sel], **PLOT_KWARGS)
+        #
+        #--- Plot Indicator Lines
+        #
+        plt.axvline(event_data["tstart"], color="red", lw=2)  # Event Start
+        plt.axvline(event_data["tstop"], color="red", lw=2)  # Event Ending
+        #
+        #--- Plot Labels
+        #
+        ax.set_ylabel(f"{ylab}({GOES_CHANNEL_SELECT[i].replace('_', ' ')} Rate)", fontsize = 9)
+        plt.text(
+            event_data["tstart"] + (0.025 * deltatime), int_label, r"Interruption", color="red"
+        )  # Interruption Marker
+        #
+        #--- Plot of radiation zones
+        #
+        for row in zones:
+            start = datetime.strptime(str(row["start"]).split(".")[0], "%Y:%j:%H:%M:%S")
+            stop = datetime.strptime(str(row["stop"]).split(".")[0], "%Y:%j:%H:%M:%S")
+            plt.plot([start, stop], [ymin, ymin], color="purple", lw=8)  # Radiation Zone
+        
+    ofile = os.path.join(
+        pathing_dict["OUT_WEB_DIR"], "GOES_plot", f"{event_data['name']}_goes.png"
+    )
+    ofile2 = os.path.join(
+        pathing_dict["OUT_WEB_DIR2"], "GOES_plot", f"{event_data['name']}_goes.png"
+    )
+    os.makedirs(os.path.dirname(ofile), exist_ok=True)
+    os.makedirs(os.path.dirname(ofile2), exist_ok=True)
+    plt.savefig(ofile, format="png", dpi=300)
+    plt.savefig(ofile2, format="png", dpi=300)
