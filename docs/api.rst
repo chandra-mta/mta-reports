@@ -34,3 +34,10 @@ GOES Data Set
 .. automodule:: interruption.goes_data_set
     :members:
     :undoc-members:
+
+ACE Data Set
+=============
+
+.. automodule:: interruption.ace_data_set
+    :members:
+    :undoc-members:

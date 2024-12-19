@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import shutil
 from astropy.io import ascii
-from astropy.table import vstack
+from astropy.table import vstack, Column, unique
 import subprocess
 
 #
@@ -43,6 +43,7 @@ _ACE_INPUT_DATA_TIME_FORMAT = "%Y %m %d  %H%M" #: Time format for input ACE radi
 #: Column format for input ACE radiation data archive written INTERRUPT_DIR.
 #: 
 #: **Note:** Status indicators: 0 = nominal, 4,6,7,8 = bad data, unable to process, 9 = no data, -1 = missing data
+#: 
 #: **Units:** KeV
 _INPUT_ACE_COLUMNS = ["year",
                       "month",
@@ -69,8 +70,20 @@ def ace_data_set(event_data, pathing_dict):
     ace_table = fetch_ACE_data_table(time_start, time_stop, pathing_dict)
 
 def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
+    """Fetch ACE data from the ``INTERRUPT_DIR/Data`` archive files and format into an astropy table.
+
+    :param time_start: Starting time for data fetch, defaults to two days before the start of the interruption event.
+    :type time_start: ``DateTime``
+    :param time_stop: Stopping time for data fetch, defaults to two days after the start of the interruption event.
+    :type time_stop: ``DateTime``
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+    :return: Table of unique ACE data points spanning interruption event.
+    :rtype: ``astropy.table.Table``
+
+    """
     #
-    # --- Check if interruption spans over the new year
+    # --- Check if the interruption spans over the new year
     # --- and therefore need to construct ACE data table from two files.
     #
     if time_start.year == time_stop.year: # One Year File
@@ -78,12 +91,17 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
     elif time_start.year != time_stop.year:  # Two Year Files
         ace_table = _double_file_fetch(time_start, time_stop, pathing_dict)
     #
-    # --- Reformat Columns for easier processing
+    # --- Reformat columns for easier processing
     #
     for i, col in enumerate(_INPUT_ACE_COLUMNS):
         ace_table.rename_column(f"col{i+1}", col)
+    #
+    # --- Format complete time column
+    #
+    datetime_col = Column(_convert_time_format(ace_table['year'], ace_table['month'], ace_table['day'], ace_table['hhmm']), name="datetime")
+    ace_table.add_column(datetime_col)
     
-    return ace_table
+    return unique(ace_table, keys='datetime')
 
 #
 # --- Internal functions to assist cleanly formatting the input ACE table from text to astropy table
@@ -102,13 +120,23 @@ def _round_down(dt):
 
 @np.vectorize
 def _convert_time_format(year,month,day,hhmm):
-    #
-    # --- Numbers in hundreds and thousands place is hours
-    # --- while numbers in tens and ones place is 
-    #
-    hh = hhmm // 100
-    mm = hhmm % 100
-    return f"{year:04}:{month:02}:{day:02}:{hh:02}:{mm:02}"
+    """Converts separated ``numpy.ndarray`` containing date information into an array of ``DateTime`` objects.
+
+    :param year: Four digit year
+    :type year: int
+    :param month: Month
+    :type month: int
+    :param day: Day
+    :type day: int
+    :param hhmm: Integer Combining Hours and Minutes
+    :type hhmm: int
+    :return: ``numpy.ndarray`` of ``DateTime`` objects.
+    :rtype: ``numpy.ndarray(dtype = 'object')``
+
+    """
+    hh = hhmm // 100 #: hours in hundreds and thousands place
+    mm = hhmm % 100 #: minutes in tens and ones place
+    return datetime.strptime(f"{year:04}:{month:02}:{day:02}:{hh:02}:{mm:02}", "%Y:%m:%d:%H:%M")
 
 def _single_file_fetch(time_start, time_stop, pathing_dict):
     data_start = None
