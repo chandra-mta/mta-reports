@@ -27,25 +27,29 @@ OUT_WEB_DIR = "/data/mta_www/mta_interrupt"
 WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
 OUT_WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
 
-PATHING_DICT = {
+_PATHING_DICT = {
     "WEB_DIR": WEB_DIR,
     "OUT_WEB_DIR": OUT_WEB_DIR,
     "WEB_DIR2": WEB_DIR2,
     "OUT_WEB_DIR2": OUT_WEB_DIR2,
-}
-#
-# --- Allow for multiple if we so choose to plot and record multiple HRC-related msids in report
-#
-MSIDS = ["2SHEV2RT"]
+}  #: Dictionary of input and output file paths for collecting HRC interruption data.
 
-HRC_DATA_HEADER = f"Science Run Interruption: #LSTART\n\nTime\t\tHRC\n{'-'*67}\n"
-HRC_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Interruption Started\n{'-'*95}\n"
-TIME_FORMAT = "%Y:%m:%d:%H:%M"
+
+_MSIDS = [
+    "2SHEV2RT"
+]  #: MSID Selection. Allow for multiple if we so choose to plot and record multiple HRC-related msids in report
+
+#
+# --- File Header Globals
+#
+_HRC_DATA_HEADER = f"Science Run Interruption: #LSTART\n\nTime\t\tHRC\n{'-'*67}\n"
+_HRC_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Interruption Started\n{'-'*95}\n"
+_HEADER_TIME_FORMAT = "%Y:%m:%d:%H:%M"
 
 #
 # --- Plot Keyword Arguments
 #
-PLOT_KWARGS = {
+_PLOT_KWARGS = {
     "linestyle": "",
     "marker": ".",
     "markersize": 0.5,
@@ -67,7 +71,7 @@ def hrc_data_set(event_data, pathing_dict):
     """
     print("HRC Data Set")
     fetch_result = fetch.MSIDset(
-        MSIDS,
+        _MSIDS,
         start=event_data["tstart"] - timedelta(days=2),
         stop=event_data["tstop"] + timedelta(days=2),
         stat="5min",
@@ -85,21 +89,21 @@ def write_hrc_files(fetch_result, event_data, pathing_dict):
     :type event_data: dict(str, datetime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
-    :File Out: Writes the ``<event_name>_hrc.txt`` data table to the two ``OUT_WEB_DIR/Data_dir`` directories, 
+    :File Out: Writes the ``<event_name>_hrc.txt`` data table to the two ``OUT_WEB_DIR/Data_dir`` directories,
         and writes the `<event_name>_hrc_stat` statistics table to the two ``OUT_WEB_DIR/Stat_dir`` directories.
 
     """
     #
     # --- Write Data File
     #
-    line = HRC_DATA_HEADER.replace(
-        "#LSTART", event_data["tstart"].strftime(TIME_FORMAT)
+    line = _HRC_DATA_HEADER.replace(
+        "#LSTART", event_data["tstart"].strftime(_HEADER_TIME_FORMAT)
     )
     times = convert_time_format(
-        fetch_result[MSIDS[0]].times, fmt_in="secs", fmt_out="date"
+        fetch_result[_MSIDS[0]].times, fmt_in="secs", fmt_out="date"
     )
     vals_group = []
-    for msid in MSIDS:
+    for msid in _MSIDS:
         vals_group.append(fetch_result[msid].vals)
     for data_tuple in np.nditer([times] + vals_group):
         substring = f"{data_tuple[0]}\t\t"
@@ -122,8 +126,8 @@ def write_hrc_files(fetch_result, event_data, pathing_dict):
     #
     # --- Write Stat File.
     #
-    line = HRC_STAT_HEADER
-    for msid in MSIDS:
+    line = _HRC_STAT_HEADER
+    for msid in _MSIDS:
         avg = np.mean(fetch_result[msid].vals)
         std = np.std(fetch_result[msid].vals)
 
@@ -178,7 +182,7 @@ def plot_hrc_data(fetch_result, event_data, pathing_dict):
     # --- Plotting
     #
     plt.rcParams["figure.figsize"] = [8, 4]
-    tixs, fig, ax = plot_cxctime(times, mapped_vals, **PLOT_KWARGS)
+    tixs, fig, ax = plot_cxctime(times, mapped_vals, **_PLOT_KWARGS)
     plt.ylim([3, 5])
     plt.grid()
     #

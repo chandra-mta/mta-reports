@@ -28,26 +28,35 @@ WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
 OUT_WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
 SPACE_WEATHER_DIR = "/data/mta4/Space_Weather"
 
-PATHING_DICT = {
+_PATHING_DICT = {
     "WEB_DIR": WEB_DIR,
     "OUT_WEB_DIR": OUT_WEB_DIR,
     "WEB_DIR2": WEB_DIR2,
     "OUT_WEB_DIR2": OUT_WEB_DIR2,
     "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
-}
+}  #: Dictionary of input and output file paths for collecting GOES interruption data.
 
-GOES_DATA_TIME_FORMAT = "%Y:%j:%H:%M:%S"
-GOES_CHANNEL_SELECT = ["P4", "P5", "P6", "HRC_Proxy"]
+_GOES_DATA_TIME_FORMAT = "%Y:%j:%H:%M:%S"  #: Conversion format between file archive time to ``Datetime`` objects.
+_GOES_CHANNEL_SELECT = [
+    "P4",
+    "P5",
+    "P6",
+    "HRC_Proxy",
+]  #: Selection of GOES-R channels of interest.
 
-subhead = "\t\t".join(GOES_CHANNEL_SELECT)
-GOES_DATA_HEADER = f"Science Run Interruption: #LSTART\n\nTime\t\t{subhead}\n{'-'*67}\n"
-GOES_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Interruption Started\n{'-'*95}\n"
-TIME_FORMAT = "%Y:%m:%d:%H:%M"
+#
+# --- File heading information
+#
+_subhead = "\t\t".join(_GOES_CHANNEL_SELECT)
+_GOES_DATA_HEADER = (
+    f"Science Run Interruption: #LSTART\n\nTime\t\t{_subhead}\n{'-'*67}\n"
+)
+_GOES_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Interruption Started\n{'-'*95}\n"
 
 #
 # --- Plot Keyword Arguments
 #
-PLOT_KWARGS = {
+_PLOT_KWARGS = {
     "linestyle": "",
     "marker": ".",
     "markersize": 0.5,
@@ -63,6 +72,7 @@ def goes_data_set(event_data, pathing_dict):
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :raises ValueError: If the ``event_data['tstart']`` starting time or ``event_data['tstop']`` stopping time data entires cannot be found in the Space Weather GOES data archive.
+    :raises FileNotFoundError: If the ``SPACE_WEATHER_DIR/GOES/Data/goes_data_r.txt`` file cannot be found.
 
     """
     print("GOES Data Set")
@@ -82,7 +92,7 @@ def goes_data_set(event_data, pathing_dict):
     while data_start is None:
         try:
             data_start_search = (
-                f"grep -in '{time_start.strftime(GOES_DATA_TIME_FORMAT)}' {data_file}"
+                f"grep -in '{time_start.strftime(_GOES_DATA_TIME_FORMAT)}' {data_file}"
             )
             data_start = int(
                 subprocess.check_output(
@@ -107,7 +117,7 @@ def goes_data_set(event_data, pathing_dict):
     while data_stop is None:
         try:
             data_stop_search = (
-                f"grep -in '{time_stop.strftime(GOES_DATA_TIME_FORMAT)}' {data_file}"
+                f"grep -in '{time_stop.strftime(_GOES_DATA_TIME_FORMAT)}' {data_file}"
             )
             data_stop = int(
                 subprocess.check_output(
@@ -129,7 +139,9 @@ def goes_data_set(event_data, pathing_dict):
     #
     # --- Once the data indices have been found, load that selection into an astropy table
     #
-    goes_table = ascii.read(data_file, data_start = data_start - 3, data_end = data_stop - 2)
+    goes_table = ascii.read(
+        data_file, data_start=data_start - 3, data_end=data_stop - 2
+    )
     write_goes_files(goes_table, event_data, pathing_dict)
     plot_goes_data(goes_table, event_data, pathing_dict)
 
@@ -150,12 +162,12 @@ def write_goes_files(goes_table, event_data, pathing_dict):
     #
     # --- Write Data File
     #
-    line = GOES_DATA_HEADER.replace(
-        "#LSTART", event_data["tstart"].strftime(TIME_FORMAT)
+    line = _GOES_DATA_HEADER.replace(
+        "#LSTART", event_data["tstart"].strftime("%Y:%m:%d:%H:%M")
     )
     for row in goes_table:
         substring = f"{row['Time']}\t\t"
-        for channel in GOES_CHANNEL_SELECT:
+        for channel in _GOES_CHANNEL_SELECT:
             if channel == "HRC_Proxy":
                 substring += f"{row[channel]}"
             else:
@@ -178,10 +190,10 @@ def write_goes_files(goes_table, event_data, pathing_dict):
     #
     # --- Write Stat File.
     #
-    sel = goes_table["Time"] == event_data["tstart"].strftime(GOES_DATA_TIME_FORMAT)
+    sel = goes_table["Time"] == event_data["tstart"].strftime(_GOES_DATA_TIME_FORMAT)
     interrupt_row = goes_table[sel][0]
-    line = GOES_STAT_HEADER
-    for channel in GOES_CHANNEL_SELECT:
+    line = _GOES_STAT_HEADER
+    for channel in _GOES_CHANNEL_SELECT:
         avg = np.mean(goes_table[channel].data)
         std = np.std(goes_table[channel].data)
 
@@ -234,12 +246,12 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
     #
     # --- Reference Information
     #
-    n_axes = len(GOES_CHANNEL_SELECT)
+    n_axes = len(_GOES_CHANNEL_SELECT)
     ylab = "Log$_{10}$"
     date_format = mdates.DateFormatter("%j")
     deltatime = event_data["tstop"] - event_data["tstart"]
 
-    for i, channel in enumerate(GOES_CHANNEL_SELECT):
+    for i, channel in enumerate(_GOES_CHANNEL_SELECT):
         if i == 0:
             ax1 = fig.add_subplot(n_axes, 1, 1)
             ax = ax1
@@ -266,10 +278,10 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
         #
         # --- Map values to a logarithmic scale, deselecting values of zero
         #
-        m = goes_table[GOES_CHANNEL_SELECT[i]].data
+        m = goes_table[channel].data
         mapped_vals = np.log10(m, out=np.zeros_like(m, dtype=float), where=(m > 0))
         sel = mapped_vals != 0
-        plt.plot(times[sel], mapped_vals[sel], **PLOT_KWARGS)
+        plt.plot(times[sel], mapped_vals[sel], **_PLOT_KWARGS)
         #
         # --- Plot Indicator Lines
         #
@@ -278,9 +290,7 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
         #
         # --- Plot Labels
         #
-        ax.set_ylabel(
-            f"{ylab}({GOES_CHANNEL_SELECT[i].replace('_', ' ')} Rate)", fontsize=9
-        )
+        ax.set_ylabel(f"{ylab}({channel.replace('_', ' ')} Rate)", fontsize=9)
         plt.text(
             event_data["tstart"] + (0.025 * deltatime),
             int_label,
@@ -308,6 +318,7 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
     plt.savefig(ofile, format="png", dpi=300)
     plt.savefig(ofile2, format="png", dpi=300)
 
+
 #
 # --- Internal functions to assist cleanly formatting the input GOES table
 #
@@ -323,6 +334,14 @@ def _round_down(dt):
     delta_min = dt.minute % 5
     return datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute - delta_min)
 
+
 @np.vectorize
 def _convert_time_format(string):
-    return datetime.strptime(string, GOES_DATA_TIME_FORMAT)
+    """Converts a ``numpy.ndarray`` containing strings into an array of ``DateTime`` objects.
+
+    :param string: ``numpy.ndarray`` of strings in the :data:`~interruption.goes_data_set._GOES_DATA_TIME_FORMAT` format.
+    :type string: ``numpy.ndarray(dtype = '<U16')``
+    :return: ``numpy.ndarray`` of ``DateTime`` objects.
+    :rtype: ``numpy.ndarray(dtype = 'object')``
+    """
+    return datetime.strptime(string, _GOES_DATA_TIME_FORMAT)

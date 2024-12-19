@@ -30,7 +30,7 @@ OUT_WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
 SPACE_WEATHER_DIR = "/data/mta4/Space_Weather"
 INTERRUPT_DIR = "/data/mta/Script/Interrupt"
 
-PATHING_DICT = {
+_PATHING_DICT = {
     "BIN_DIR": BIN_DIR,
     "DATA_DIR": DATA_DIR,
     "OUT_DATA_DIR": OUT_DATA_DIR,
@@ -39,16 +39,16 @@ PATHING_DICT = {
     "WEB_DIR2": WEB_DIR2,
     "OUT_WEB_DIR2": OUT_WEB_DIR2,
     "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
-    "INTERRUPT_DIR": INTERRUPT_DIR
+    "INTERRUPT_DIR": INTERRUPT_DIR,
 }  #: Dictionary of input and output file paths for collecting all interruption data.
 
 TIME_FORMATS = [
-    '%Y:%j:%H:%M:%S',
-    '%Y:%m:%d:%H:%M:%S',
+    "%Y:%j:%H:%M:%S",
+    "%Y:%m:%d:%H:%M:%S",
 ]  #: Allowable time formats for recording an interruption from the command line.
 
-#: Maximum length of an interruption. If our lost science time exceeds fourteen days, 
-#: then there's likely a user error in recording the interruption, 
+#: Maximum length of an interruption in seconds. If our lost science time exceeds fourteen days,
+#: then there's likely a user error in recording the interruption,
 #: and so a value error is thrown in the :func:`~interruption.run_interruption.generate_event_dict` function.
 MAX_TIME_LOST = 1209600
 
@@ -106,6 +106,8 @@ def generate_event_dict(start, stop, name=None):
     :param name: Name of interruption event, parameter defaults to ``None`` which sets the name to the start time.
     :type name: str, optional
     :raises ValueError: If the provided starting or stopping times are not one of the formats listed in :data:`~interruption.run_interruption.TIME_FORMATS`
+    :raises ValueError: If the calculated lost science time exceeds :data:`~interruption.run_interruption.MAX_TIME_LOST`.
+        There is likely a user error in the start and stop times provided in the command line arguments.
     :return: **event_data** - A dictionary which stores interruption data.
     :rtype: dict(str, datetime or float or str)
 
@@ -143,8 +145,10 @@ def generate_event_dict(start, stop, name=None):
     science_time_lost_secs = (
         chandra_stop.secs - chandra_start.secs - zones_duration_secs
     )
-    if science_time_lost_secs >  MAX_TIME_LOST:
-        raise ValueError(f"Lost science time exceeds 14 days. Check start and stop: {tstart} - {tstop}.")
+    if science_time_lost_secs > MAX_TIME_LOST:
+        raise ValueError(
+            f"Lost science time exceeds 14 days. Check start and stop: {tstart} - {tstop}."
+        )
 
     out = {
         "name": name,
@@ -159,7 +163,7 @@ def generate_event_dict(start, stop, name=None):
 # -- supplemental_files: write relevant info to a few supplemental files             --
 # -------------------------------------------------------------------------------------
 def supplemental_files(event_data, pathing_dict):
-    """Write supplemental radiation event information to additional files with locations determined by :data:`~interruption.run_interruption.PATHING_DICT`.
+    """Write supplemental radiation event information to additional files.
 
     :param event_data: A dictionary which stores interruption data.
     :type event_data: dict(str, datetime or float or str)
@@ -328,7 +332,7 @@ if __name__ == "__main__":
         else:
             os.system(f"mkdir -p /tmp/{user}; touch /tmp/{user}/{name}.lock")
 
-        run_interrupt(event_data, PATHING_DICT)
+        run_interrupt(event_data, _PATHING_DICT)
         #
         # --- Remove lock file once process is completed
         #
