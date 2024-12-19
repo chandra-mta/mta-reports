@@ -28,6 +28,7 @@ OUT_WEB_DIR = "/data/mta_www/mta_interrupt"
 WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
 OUT_WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
 SPACE_WEATHER_DIR = "/data/mta4/Space_Weather"
+INTERRUPT_DIR = "/data/mta/Script/Interrupt"
 
 PATHING_DICT = {
     "BIN_DIR": BIN_DIR,
@@ -38,12 +39,18 @@ PATHING_DICT = {
     "WEB_DIR2": WEB_DIR2,
     "OUT_WEB_DIR2": OUT_WEB_DIR2,
     "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
+    "INTERRUPT_DIR": INTERRUPT_DIR
 }  #: Dictionary of input and output file paths for collecting all interruption data.
 
 TIME_FORMATS = [
     '%Y:%j:%H:%M:%S',
     '%Y:%m:%d:%H:%M:%S',
 ]  #: Allowable time formats for recording an interruption from the command line.
+
+#: Maximum length of an interruption. If our lost science time exceeds fourteen days, 
+#: then there's likely a user error in recording the interruption, 
+#: and so a value error is thrown in the :func:`~interruption.run_interruption.generate_event_dict` function.
+MAX_TIME_LOST = 1209600
 
 #
 # --- extracting formatted data sets, compute statistics, then plot for each data category
@@ -136,6 +143,8 @@ def generate_event_dict(start, stop, name=None):
     science_time_lost_secs = (
         chandra_stop.secs - chandra_start.secs - zones_duration_secs
     )
+    if science_time_lost_secs >  MAX_TIME_LOST:
+        raise ValueError(f"Lost science time exceeds 14 days. Check start and stop: {tstart} - {tstop}.")
 
     out = {
         "name": name,
@@ -207,11 +216,11 @@ def run_interrupt(event_data, pathing_dict):
 
     """
     print(f"Generating: {event_data['name']}")
-    #supplemental_files(event_data, pathing_dict)
+    supplemental_files(event_data, pathing_dict)
     #
     # --- HRC data set
     #
-    #hrc.hrc_data_set(event_data, pathing_dict)
+    hrc.hrc_data_set(event_data, pathing_dict)
     #
     # ---- GOES data set
     #

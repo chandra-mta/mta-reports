@@ -72,10 +72,10 @@ def goes_data_set(event_data, pathing_dict):
     #
     # --- Search the data_file via grep for the interruption time interval
     #
-    time_start = round_down(event_data["tstart"]) - timedelta(days=2)
-    time_stop = round_down(event_data["tstop"]) + timedelta(days=2)
+    time_start = _round_down(event_data["tstart"]) - timedelta(days=2)
+    time_stop = _round_down(event_data["tstop"]) + timedelta(days=2)
     data_start = None
-    data_end = None
+    data_stop = None
     #
     # --- Find data line for start
     #
@@ -104,14 +104,14 @@ def goes_data_set(event_data, pathing_dict):
     #
     # --- Find data line for stop
     #
-    while data_end is None:
+    while data_stop is None:
         try:
-            data_end_search = (
+            data_stop_search = (
                 f"grep -in '{time_stop.strftime(GOES_DATA_TIME_FORMAT)}' {data_file}"
             )
-            data_end = int(
+            data_stop = int(
                 subprocess.check_output(
-                    data_end_search, shell=True, executable="/bin/csh"
+                    data_stop_search, shell=True, executable="/bin/csh"
                 )
                 .decode()
                 .split(":")[0]
@@ -121,7 +121,7 @@ def goes_data_set(event_data, pathing_dict):
                 #
                 # --- Could not find the data with that specific time
                 #
-                time_start -= timedelta(minutes=5)
+                time_stop -= timedelta(minutes=5)
             elif error.returncode == 2:
                 raise FileNotFoundError(f"{data_file}")
         if time_stop < time_start:
@@ -129,7 +129,7 @@ def goes_data_set(event_data, pathing_dict):
     #
     # --- Once the data indices have been found, load that selection into an astropy table
     #
-    goes_table = ascii.read(data_file, data_start=data_start - 3, data_end=data_end - 2)
+    goes_table = ascii.read(data_file, data_start = data_start - 3, data_end = data_stop - 2)
     write_goes_files(goes_table, event_data, pathing_dict)
     plot_goes_data(goes_table, event_data, pathing_dict)
 
@@ -230,9 +230,7 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
     fig = plt.figure(figsize=(10, 6.7))
     fig.clf()
 
-    convert = lambda x: datetime.strptime(x, GOES_DATA_TIME_FORMAT)  # noqa: E731
-    s2d = np.vectorize(convert)
-    times = s2d(goes_table["Time"].data)
+    times = _convert_time_format(goes_table["Time"].data)
     #
     # --- Reference Information
     #
@@ -310,8 +308,10 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
     plt.savefig(ofile, format="png", dpi=300)
     plt.savefig(ofile2, format="png", dpi=300)
 
-
-def round_down(dt):
+#
+# --- Internal functions to assist cleanly formatting the input GOES table
+#
+def _round_down(dt):
     """Round a DateTime object down to the nearest five minutes. For use in fetching from data files.
 
     :param dt: A ``DateTime`` object of any kind
@@ -322,3 +322,7 @@ def round_down(dt):
     """
     delta_min = dt.minute % 5
     return datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute - delta_min)
+
+@np.vectorize
+def _convert_time_format(string):
+    return datetime.strptime(string, GOES_DATA_TIME_FORMAT)
