@@ -51,7 +51,7 @@ _subhead = "\t\t".join(_GOES_CHANNEL_SELECT)
 _GOES_DATA_HEADER = (
     f"Science Run Interruption: #LSTART\n\nTime\t\t{_subhead}\n{'-'*67}\n"
 )
-_GOES_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Interruption Started\n{'-'*95}\n"
+_GOES_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Start of Interruption\n{'-'*95}\n"
 
 #
 # --- Plot Keyword Arguments
@@ -76,14 +76,35 @@ def goes_data_set(event_data, pathing_dict):
 
     """
     print("GOES Data Set")
+    time_start = _round_down(event_data["tstart"]) - timedelta(days=2)
+    time_stop = _round_down(event_data["tstop"]) + timedelta(days=2)
+    goes_table = fetch_GOES_data(time_start, time_stop, pathing_dict)
+    write_goes_files(goes_table, event_data, pathing_dict)
+    plot_goes_data(goes_table, event_data, pathing_dict)
+
+def fetch_GOES_data(time_start, time_stop, pathing_dict):
+    """Fetch ACE data from the ``INTERRUPT_DIR/Data`` archive files and format into an astropy table.
+
+    :param time_start: Starting time for data fetch, defaults to two days before the start of the interruption event.
+    :type time_start: ``DateTime``
+    :param time_stop: Stopping time for data fetch, defaults to two days after the start of the interruption event.
+    :type time_stop: ``DateTime``
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+    :raises ValueError: If the starting or stopping time line of data cannot be found in the data archive.
+    :raises FileNotFoundError: If the data archive file cannot be found.
+    :return: Table of unique ACE data points spanning interruption event.
+    :rtype: ``astropy.table.Table``
+    :Note: While algorithmically very similar to the data fetch performed in the :mod:`~interruption.ace_data_set.py` script,
+        this table stores ``Time`` as a string rather than a ``DateTime`` object to reduce computation due to how GOES archive data files are stored.
+
+    """
     data_file = os.path.join(
         pathing_dict["SPACE_WEATHER_DIR"], "GOES", "Data", "goes_data_r.txt"
     )
     #
     # --- Search the data_file via grep for the interruption time interval
     #
-    time_start = _round_down(event_data["tstart"]) - timedelta(days=2)
-    time_stop = _round_down(event_data["tstop"]) + timedelta(days=2)
     data_start = None
     data_stop = None
     #
@@ -142,9 +163,7 @@ def goes_data_set(event_data, pathing_dict):
     goes_table = ascii.read(
         data_file, data_start=data_start - 3, data_end=data_stop - 2
     )
-    write_goes_files(goes_table, event_data, pathing_dict)
-    plot_goes_data(goes_table, event_data, pathing_dict)
-
+    return goes_table
 
 def write_goes_files(goes_table, event_data, pathing_dict):
     """Write GOES data and statistics to human-reference text file.
@@ -155,8 +174,8 @@ def write_goes_files(goes_table, event_data, pathing_dict):
     :type event_data: dict(str, datetime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
-    :File Out: Writes the ``<event_name>_hrc.txt`` data table to the two ``OUT_WEB_DIR/Data_dir`` directories,
-        and writes the ``<event_name>_hrc_stat`` statistics table to the two ``OUT_WEB_DIR/Stat_dir`` directories.
+    :File Out: Writes the ``<event_name>_goes.txt`` data table to the two ``OUT_WEB_DIR/Data_dir`` directories,
+        and writes the ``<event_name>_goes_stat`` statistics table to the two ``OUT_WEB_DIR/Stat_dir`` directories.
 
     """
     #
