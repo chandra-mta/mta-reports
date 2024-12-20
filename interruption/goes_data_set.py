@@ -35,7 +35,7 @@ _PATHING_DICT = {
     "OUT_WEB_DIR2": OUT_WEB_DIR2,
     "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
 }  #: Dictionary of input and output file paths for collecting GOES interruption data.
-
+_FETCH_INTERVAL = 2 #: Number of days before and after interruption period to fetch trending data from.
 _GOES_DATA_TIME_FORMAT = "%Y:%j:%H:%M:%S"  #: Conversion format between file archive time to ``Datetime`` objects.
 _GOES_CHANNEL_SELECT = [
     "P4",
@@ -71,19 +71,17 @@ def goes_data_set(event_data, pathing_dict):
     :type event_data: dict(str, datetime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
-    :raises ValueError: If the ``event_data['tstart']`` starting time or ``event_data['tstop']`` stopping time data entires cannot be found in the Space Weather GOES data archive.
-    :raises FileNotFoundError: If the ``SPACE_WEATHER_DIR/GOES/Data/goes_data_r.txt`` file cannot be found.
 
     """
     print("GOES Data Set")
-    time_start = _round_down(event_data["tstart"]) - timedelta(days=2)
-    time_stop = _round_down(event_data["tstop"]) + timedelta(days=2)
+    time_start = _round_down(event_data["tstart"]) - timedelta(days=_FETCH_INTERVAL)
+    time_stop = _round_down(event_data["tstop"]) + timedelta(days=_FETCH_INTERVAL)
     goes_table = fetch_GOES_data(time_start, time_stop, pathing_dict)
     write_goes_files(goes_table, event_data, pathing_dict)
     plot_goes_data(goes_table, event_data, pathing_dict)
 
 def fetch_GOES_data(time_start, time_stop, pathing_dict):
-    """Fetch ACE data from the ``INTERRUPT_DIR/Data`` archive files and format into an astropy table.
+    """Fetch GOES data from the ``SPACE_WEATHER_DIR/GOES/Data/goes_data_r.txt`` archive file and format into an astropy table.
 
     :param time_start: Starting time for data fetch, defaults to two days before the start of the interruption event.
     :type time_start: ``DateTime``
@@ -91,12 +89,12 @@ def fetch_GOES_data(time_start, time_stop, pathing_dict):
     :type time_stop: ``DateTime``
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
-    :raises ValueError: If the starting or stopping time line of data cannot be found in the data archive.
-    :raises FileNotFoundError: If the data archive file cannot be found.
-    :return: Table of unique ACE data points spanning interruption event.
+    :raises ValueError: If the ``event_data['tstart']`` starting time or ``event_data['tstop']`` stopping time data entires cannot be found in the Space Weather GOES data archive.
+    :raises FileNotFoundError: If the ``SPACE_WEATHER_DIR/GOES/Data/goes_data_r.txt`` file cannot be found.
+    :return: Table of unique GOES data points spanning interruption event.
     :rtype: ``astropy.table.Table``
-    :Note: While algorithmically very similar to the data fetch performed in the :mod:`~interruption.ace_data_set.py` script,
-        this table stores ``Time`` as a string rather than a ``DateTime`` object to reduce computation due to how GOES archive data files are stored.
+    :Note: While algorithmically very similar to the data fetch performed in the :mod:`~interruption.ace_data_set` script,
+        this table stores the time column as a string rather than a ``DateTime`` object to reduce computation due to how GOES archive data files are stored.
 
     """
     data_file = os.path.join(
@@ -168,7 +166,7 @@ def fetch_GOES_data(time_start, time_stop, pathing_dict):
 def write_goes_files(goes_table, event_data, pathing_dict):
     """Write GOES data and statistics to human-reference text file.
 
-    :param goes_table: GOES data table read from ``SPACE_WEATHER_DIR/GOES/Data``.
+    :param goes_table: GOES data table read from :func:`~interruption.goes_data_set.fetch_goes_data`.
     :type goes_table: astropy.table.Table
     :param event_data: A dictionary which stores interruption data.
     :type event_data: dict(str, datetime or float or str)
@@ -245,7 +243,7 @@ def write_goes_files(goes_table, event_data, pathing_dict):
 def plot_goes_data(goes_table, event_data, pathing_dict):
     """Create a plot of GOES channel data and HRC proxy.
 
-    :param goes_table: GOES data table read from ``SPACE_WEATHER_DIR/GOES/Data``.
+    :param goes_table: GOES data table read from :func:`~interruption.goes_data_set.fetch_goes_data`.
     :type goes_table: astropy.table.Table
     :param event_data: A dictionary which stores interruption data.
     :type event_data: dict(str, datetime or float or str)
@@ -255,8 +253,8 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
 
     """
     zones = rad_zones.filter(
-        start=event_data["tstart"] - timedelta(days=2),
-        stop=event_data["tstop"] + timedelta(days=2),
+        start=event_data["tstart"] - timedelta(days=_FETCH_INTERVAL),
+        stop=event_data["tstop"] + timedelta(days=_FETCH_INTERVAL),
     ).table
     fig = plt.figure(figsize=(10, 6.7))
     fig.clf()

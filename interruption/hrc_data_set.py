@@ -33,12 +33,10 @@ _PATHING_DICT = {
     "WEB_DIR2": WEB_DIR2,
     "OUT_WEB_DIR2": OUT_WEB_DIR2,
 }  #: Dictionary of input and output file paths for collecting HRC interruption data.
-
-
+_FETCH_INTERVAL = 2 #: Number of days before and after interruption period to fetch trending data from.
 _MSIDS = [
     "2SHEV2RT"
 ]  #: MSID Selection. Allow for multiple if we so choose to plot and record multiple HRC-related msids in report
-
 #
 # --- File Header Globals
 #
@@ -72,8 +70,8 @@ def hrc_data_set(event_data, pathing_dict):
     print("HRC Data Set")
     fetch_result = fetch.MSIDset(
         _MSIDS,
-        start=event_data["tstart"] - timedelta(days=2),
-        stop=event_data["tstop"] + timedelta(days=2),
+        start=event_data["tstart"] - timedelta(days=_FETCH_INTERVAL),
+        stop=event_data["tstop"] + timedelta(days=_FETCH_INTERVAL),
         stat="5min",
     )
     write_hrc_files(fetch_result, event_data, pathing_dict)
@@ -172,8 +170,8 @@ def plot_hrc_data(fetch_result, event_data, pathing_dict):
 
     """
     zones = rad_zones.filter(
-        start=event_data["tstart"] - timedelta(days=2),
-        stop=event_data["tstop"] + timedelta(days=2),
+        start=event_data["tstart"] - timedelta(days=_FETCH_INTERVAL),
+        stop=event_data["tstop"] + timedelta(days=_FETCH_INTERVAL),
     ).table
     m = fetch_result["2SHEV2RT"].vals
     times = fetch_result["2SHEV2RT"].times

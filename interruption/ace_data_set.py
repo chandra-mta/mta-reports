@@ -139,8 +139,8 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
     :type pathing_dict: dict(str, str)
     :return: Table of unique ACE data points spanning interruption event.
     :rtype: ``astropy.table.Table``
-    :Note: While algorithmically very similar to the data fetch performed in the :mod:`~interruption.goes_data_set.py` script,
-        this table stores ``Time`` as a ``DateTime`` object rather than a string to reduce computation due to how ACE archive data files are stored.
+    :Note: While algorithmically very similar to the data fetch performed in the :mod:`~interruption.goes_data_set` script,
+        this table stores the time column as a ``DateTime`` object rather than a string to reduce computation due to how ACE archive data files are stored.
 
     """
     #

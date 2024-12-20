@@ -16,7 +16,12 @@ from kadi.events import rad_zones
 from datetime import datetime
 import argparse
 import getpass
-
+#
+# --- extracting formatted data sets, compute statistics, then plot for each data category
+#
+import hrc_data_set as hrc
+import goes_data_set as goes
+import ace_data_set as ace
 #
 # --- Define Directory Pathing
 #
@@ -52,45 +57,6 @@ TIME_FORMATS = [
 #: and so a value error is thrown in the :func:`~interruption.run_interruption.generate_event_dict` function.
 MAX_TIME_LOST = 1209600
 
-#
-# --- extracting formatted data sets, compute statistics, then plot for each data category
-#
-import hrc_data_set as hrc  # noqa: E402
-
-import goes_data_set as goes  # noqa: E402
-
-# import extract_data as edata  # noqa: E402
-# import extract_ephin  # EPHIN/HRC data extraction  # noqa: E402
-# import extract_goes  # GOES DATA extraction  # noqa: E402
-# import extract_ace_data  # ACE (NOAA) data extraction  # noqa: E402
-# import compute_ace_stat  # ACE (NOAA) Statistics  # noqa: E402
-
-#
-# --- Ephin ploting routines
-#
-# import plot_ephin as ephin  # noqa: E402
-
-#
-# ---- GOES ploting routiens
-#
-# import plot_goes as goes  # noqa: E402
-
-#
-# ---- ACE plotting routines
-#
-# import plot_ace_rad as ace  # noqa: E402
-
-#
-# ---- extract xmm data and plot
-#
-# import compute_xmm_stat_plot_for_report as xmm  # noqa: E402
-
-#
-# ---- update html page
-#
-# import sci_run_print_html as srphtml  # noqa: E402
-
-
 # -------------------------------------------------------------------------------------
 # -- generate_event_dict: process stat / stop time arguments                         --
 # -------------------------------------------------------------------------------------
@@ -103,11 +69,11 @@ def generate_event_dict(start, stop, name=None):
     :param stop: Stop time argument from the command line.
         See :data:`~interruption.run_interruption.TIME_FORMATS` for accepted formats.
     :type stop: str
-    :param name: Name of interruption event, parameter defaults to ``None`` which sets the name to the start time.
+    :param name: Name of interruption event, parameter defaults to ``None`` which sets the name to the interruption starting date.
     :type name: str, optional
     :raises ValueError: If the provided starting or stopping times are not one of the formats listed in :data:`~interruption.run_interruption.TIME_FORMATS`
     :raises ValueError: If the calculated lost science time exceeds :data:`~interruption.run_interruption.MAX_TIME_LOST`.
-        There is likely a user error in the start and stop times provided in the command line arguments.
+        This is because there is likely a user error in the start and stop times provided in the command line arguments.
     :return: **event_data** - A dictionary which stores interruption data.
     :rtype: dict(str, datetime or float or str)
 
@@ -203,12 +169,9 @@ def supplemental_files(event_data, pathing_dict):
     with open(ifile, "w") as file:
         file.write(string)
 
-
 # -------------------------------------------------------------------------------------
 # -- run_interrupt: run all sci run plot routines                                    --
 # -------------------------------------------------------------------------------------
-
-
 def run_interrupt(event_data, pathing_dict):
     """Run all interruption data set collection and plotting scripts, then write content to a single interruption report.
 
@@ -221,19 +184,9 @@ def run_interrupt(event_data, pathing_dict):
     """
     print(f"Generating: {event_data['name']}")
     supplemental_files(event_data, pathing_dict)
-    #
-    # --- HRC data set
-    #
     hrc.hrc_data_set(event_data, pathing_dict)
-    #
-    # ---- GOES data set
-    #
     goes.goes_data_set(event_data, pathing_dict)
-    #
-    # ---- plot other radiation data (from NOAA)
-    #
-    print("NOAA")
-    # ace.start_ace_plot(event_data, pathing_dict)
+    ace.ace_data_set(event_data, pathing_dict)
     #
     # ---- extract and plot XMM data
     #
@@ -306,6 +259,7 @@ if __name__ == "__main__":
             "WEB_DIR2": f"{BIN_DIR}/test/outTest",
             "OUT_WEB_DIR2": f"{BIN_DIR}/test/outTest",
             "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
+            "INTERRUPT_DIR": INTERRUPT_DIR,
         }
         run_interrupt(event_data, pathing_dict)
 
