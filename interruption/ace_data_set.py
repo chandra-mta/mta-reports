@@ -39,6 +39,7 @@ PATHING_DICT = {
 }
 
 _ACE_INPUT_DATA_TIME_FORMAT = "%Y %m %d  %H%M" #: Time format for input ACE radiation data archive written INTERRUPT_DIR.
+_ACE_DATA_TIME_FORMAT = "%Y:%j:%H:%M:%S"  #: Time format for human-reference files.
 
 #: Column format for input ACE radiation data archive written INTERRUPT_DIR.
 #: 
@@ -51,23 +52,43 @@ _INPUT_ACE_COLUMNS = ["year",
                       "hhmm",
                       "mjd",
                       "daysecs",
-                      "e_status",
-                      "e_38-53",
-                      "e_175-315",
-                      "p_status",
-                      "p_47-68",
-                      "p_115-195",
-                      "p_310-580",
-                      "p_795-1193",
-                      "p_1060-1900",
+                      "electron_status",
+                      "electron38-53",
+                      "electron175-315",
+                      "proton_status",
+                      "proton47-68",
+                      "proton115-195",
+                      "proton310-580",
+                      "proton795-1193",
+                      "proton1060-1900",
                       "aniso"
                      ]
+
+#
+# --- File heading information
+#
+_ACE_CHANNEL_SELECT = ["electron38-53",
+                       "electron175-315",
+                       "proton47-68",
+                       "proton115-195",
+                       "proton310-580",
+                       "proton795-1193",
+                       "proton1060-1900",
+                       "aniso"
+                      ]  #: Selection of ACE table channels for the human-reference text file
+_subhead = "\t\t".join(_ACE_CHANNEL_SELECT)
+_ACE_DATA_HEADER = (
+    f"Science Run Interruption: #LSTART\n\nTime\t\t{_subhead}\n{'-'*100}\n"
+)
+_ACE_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Start of Interruption\n{'-'*95}\n"
+
 
 def ace_data_set(event_data, pathing_dict):
     print("ACE Data Set")
     time_start = _round_down(event_data["tstart"]) - timedelta(days=2)
     time_stop = _round_down(event_data["tstop"]) + timedelta(days=2)
     ace_table = fetch_ACE_data_table(time_start, time_stop, pathing_dict)
+    write_ace_files(ace_table, event_data, pathing_dict)
 
 def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
     """Fetch ACE data from the ``INTERRUPT_DIR/Data`` archive files and format into an astropy table.
@@ -80,6 +101,8 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
     :type pathing_dict: dict(str, str)
     :return: Table of unique ACE data points spanning interruption event.
     :rtype: ``astropy.table.Table``
+    :Note: While algorithmically very similar to the data fetch performed in the :mod:`~interruption.goes_data_set.py` script,
+        this table stores ``Time`` as a ``DateTime`` object rather than a string to reduce computation due to how ACE archive data files are stored.
 
     """
     #
@@ -103,6 +126,83 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
     
     return unique(ace_table, keys='datetime')
 
+def write_ace_files(ace_table, event_data, pathing_dict):
+    """Write ACE data and statistics to human-reference text file.
+
+    :param ace_table: ACE data table read from ``INTERRUPT_DIR/Data``.
+    :type ace_table: astropy.table.Table
+    :param event_data: A dictionary which stores interruption data.
+    :type event_data: dict(str, datetime or float or str)
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+    :raises ValueError: If the starting or stopping time line of data cannot be found in the data archive.
+    :raises FileNotFoundError: If the data archive file cannot be found.
+    :File Out: Writes the ``<event_name>_ace.txt`` data table to the two ``OUT_WEB_DIR/Data_dir`` directories,
+        and writes the ``<event_name>_ace_stat`` statistics table to the two ``OUT_WEB_DIR/Stat_dir`` directories.
+
+    """
+    #
+    # --- Write Data File
+    #
+    line = _ACE_DATA_HEADER.replace(
+        "#LSTART", event_data["tstart"].strftime("%Y:%m:%d:%H:%M")
+    )
+    for row in ace_table:
+        substring = f"{row['Time']}\t\t"
+        for channel in _ACE_CHANNEL_SELECT:
+            if channel == _ACE_CHANNEL_SELECT[-1]:
+                substring += f"{row[channel]}"
+            else:
+                substring += f"{row[channel]:.3e}\t\t"
+        line += f"{substring}\n"
+    
+    ifile = os.path.join(
+        pathing_dict["OUT_WEB_DIR"], "Data_dir", f"{event_data['name']}_ace.txt"
+    )
+    ifile2 = os.path.join(
+        pathing_dict["OUT_WEB_DIR2"], "Data_dir", f"{event_data['name']}_ace.txt"
+    )
+    os.makedirs(os.path.dirname(ifile), exist_ok=True)
+    os.makedirs(os.path.dirname(ifile2), exist_ok=True)
+    with open(ifile, "w") as f:
+        f.write(line)
+    if ifile != ifile2:
+        shutil.copy(ifile, ifile2)
+
+    #
+    # --- Write Stat File.
+    #
+    sel = ace_table["Time"] == event_data["tstart"]
+    interrupt_row = ace_table[sel][0]
+    line = _ACE_STAT_HEADER
+    for channel in _ACE_CHANNEL_SELECT:
+        avg = np.mean(ace_table[channel].data)
+        std = np.std(ace_table[channel].data)
+
+        maxidx = np.argmax(ace_table[channel].data)
+        max = ace_table[channel][maxidx]
+        maxtime = ace_table["Time"][maxidx].strftime(_ACE_DATA_TIME_FORMAT)
+
+        minidx = np.argmin(ace_table[channel].data)
+        min = ace_table[channel][minidx]
+        mintime = ace_table["Time"][minidx].strftime(_ACE_DATA_TIME_FORMAT)
+
+        val_intt = interrupt_row[channel]
+
+        line += f"{channel}\t\t{avg:.3e}+/-{std:.3e}\t{max:.3e}\t{maxtime}\t{min:.3e}\t{mintime}\t{val_intt}\n"
+        
+    ifile = os.path.join(
+        pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{event_data['name']}_ace_stat"
+    )
+    ifile2 = os.path.join(
+        pathing_dict["OUT_WEB_DIR2"], "Stat_dir", f"{event_data['name']}_ace_stat"
+    )
+    os.makedirs(os.path.dirname(ifile), exist_ok=True)
+    os.makedirs(os.path.dirname(ifile2), exist_ok=True)
+    with open(ifile, "w") as f:
+        f.write(line)
+    if ifile != ifile2:
+        shutil.copy(ifile, ifile2)
 #
 # --- Internal functions to assist cleanly formatting the input ACE table from text to astropy table
 #
@@ -139,6 +239,20 @@ def _convert_time_format(year,month,day,hhmm):
     return datetime.strptime(f"{year:04}:{month:02}:{day:02}:{hh:02}:{mm:02}", "%Y:%m:%d:%H:%M")
 
 def _single_file_fetch(time_start, time_stop, pathing_dict):
+    """Fetch ACE data from a single archive file.
+
+    :param time_start: Starting time for data fetch, defaults to two days before the start of the interruption event.
+    :type time_start: ``DateTime``
+    :param time_stop: Stopping time for data fetch, defaults to two days after the start of the interruption event.
+    :type time_stop: ``DateTime``
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+    :raises ValueError: If the starting or stopping time line of data cannot be found in the data archive.
+    :raises FileNotFoundError: If the data archive file cannot be found.
+    :return: Table of unique ACE data points spanning interruption event.
+    :rtype: ``astropy.table.Table``
+
+    """
     data_start = None
     data_stop = None
     data_file = os.path.join(
@@ -194,6 +308,20 @@ def _single_file_fetch(time_start, time_stop, pathing_dict):
     return ace_table
 
 def _double_file_fetch(time_start, time_stop, pathing_dict):
+    """Fetch ACE data from a two archive files. For use in the event an interruption spans across the new year.
+
+    :param time_start: Starting time for data fetch, defaults to two days before the start of the interruption event.
+    :type time_start: ``DateTime``
+    :param time_stop: Stopping time for data fetch, defaults to two days after the start of the interruption event.
+    :type time_stop: ``DateTime``
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+    :raises ValueError: If the starting or stopping time line of data cannot be found in the data archive.
+    :raises FileNotFoundError: If the data archive file cannot be found.
+    :return: Table of unique ACE data points spanning interruption event.
+    :rtype: ``astropy.table.Table``
+
+    """
     data_start = None
     data_stop = None
     #
