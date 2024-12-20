@@ -37,58 +37,96 @@ PATHING_DICT = {
     "OUT_WEB_DIR2": OUT_WEB_DIR2,
     "INTERRUPT_DIR": INTERRUPT_DIR,
 }
-
-_ACE_INPUT_DATA_TIME_FORMAT = "%Y %m %d  %H%M" #: Time format for input ACE radiation data archive written INTERRUPT_DIR.
+_FETCH_INTERVAL = 2 #: Number of days before and after interruption period to fetch trending data from.
+_ACE_INPUT_DATA_TIME_FORMAT = "%Y %m %d  %H%M"  #: Time format for input ACE radiation data archive written INTERRUPT_DIR.
 _ACE_DATA_TIME_FORMAT = "%Y:%j:%H:%M:%S"  #: Time format for human-reference files.
 
 #: Column format for input ACE radiation data archive written INTERRUPT_DIR.
-#: 
+#:
 #: **Note:** Status indicators: 0 = nominal, 4,6,7,8 = bad data, unable to process, 9 = no data, -1 = missing data
-#: 
+#:
 #: **Units:** KeV
-_INPUT_ACE_COLUMNS = ["year",
-                      "month",
-                      "day",
-                      "hhmm",
-                      "mjd",
-                      "daysecs",
-                      "electron_status",
-                      "electron38-53",
-                      "electron175-315",
-                      "proton_status",
-                      "proton47-68",
-                      "proton115-195",
-                      "proton310-580",
-                      "proton795-1193",
-                      "proton1060-1900",
-                      "aniso"
-                     ]
+_INPUT_ACE_COLUMNS = [
+    "year",
+    "month",
+    "day",
+    "hhmm",
+    "mjd",
+    "daysecs",
+    "electron_status",
+    "electron38-53",
+    "electron175-315",
+    "proton_status",
+    "proton47-68",
+    "proton115-195",
+    "proton310-580",
+    "proton795-1193",
+    "proton1060-1900",
+    "aniso",
+]
 
 #
 # --- File heading information
 #
-_ACE_CHANNEL_SELECT = ["electron38-53",
-                       "electron175-315",
-                       "proton47-68",
-                       "proton115-195",
-                       "proton310-580",
-                       "proton795-1193",
-                       "proton1060-1900",
-                       "aniso"
-                      ]  #: Selection of ACE table channels for the human-reference text file
+_ACE_CHANNEL_SELECT = [
+    "electron38-53",
+    "electron175-315",
+    "proton47-68",
+    "proton115-195",
+    "proton310-580",
+    "proton795-1193",
+    "proton1060-1900",
+    "aniso",
+]  #: Selection of ACE table channels for the human-reference text file
 _subhead = "\t\t".join(_ACE_CHANNEL_SELECT)
 _ACE_DATA_HEADER = (
     f"Science Run Interruption: #LSTART\n\nTime\t\t{_subhead}\n{'-'*100}\n"
 )
 _ACE_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Start of Interruption\n{'-'*95}\n"
 
+#
+# --- Plotting Globals
+#
+_ELECTRON_CHANNEL_SELECT = [
+    "electron38-53",
+    "electron175-315",
+]
+_PROTON_CHANNEL_SELECT = [
+    "proton47-68",
+    "proton115-195",
+    "proton310-580",
+    "proton795-1193",
+    "proton1060-1900",
+]
+_ELECTRON_PLOT_KWARGS = [
+    {'color':'red'},
+    {'color':'blue'},
+]
+
+_PROTON_PLOT_KWARGS = [
+    {'color':'red'},
+    {'color':'blue'},
+    {'color':'green'},
+    {'color':'aqua'},
+    {'color':'teal'},
+]
 
 def ace_data_set(event_data, pathing_dict):
+    """Intakes data from the ACE data archive in ``INTERRUPT_DIR`` into an ``astropy.table`` and uses data for plotting and statistics.
+
+    :param event_data: A dictionary which stores interruption data.
+    :type event_data: dict(str, datetime or float or str)
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+
+    """
     print("ACE Data Set")
-    time_start = _round_down(event_data["tstart"]) - timedelta(days=2)
-    time_stop = _round_down(event_data["tstop"]) + timedelta(days=2)
+    time_start = _round_down(event_data["tstart"]) - timedelta(days=_FETCH_INTERVAL)
+    time_stop = _round_down(event_data["tstop"]) + timedelta(days=_FETCH_INTERVAL)
     ace_table = fetch_ACE_data_table(time_start, time_stop, pathing_dict)
     write_ace_files(ace_table, event_data, pathing_dict)
+    plot_ace_data(ace_table, event_data, pathing_dict)
+
 
 def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
     """Fetch ACE data from the ``INTERRUPT_DIR/Data`` archive files and format into an astropy table.
@@ -109,7 +147,7 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
     # --- Check if the interruption spans over the new year
     # --- and therefore need to construct ACE data table from two files.
     #
-    if time_start.year == time_stop.year: # One Year File
+    if time_start.year == time_stop.year:  # One Year File
         ace_table = _single_file_fetch(time_start, time_stop, pathing_dict)
     elif time_start.year != time_stop.year:  # Two Year Files
         ace_table = _double_file_fetch(time_start, time_stop, pathing_dict)
@@ -121,15 +159,21 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
     #
     # --- Format complete time column
     #
-    datetime_col = Column(_convert_time_format(ace_table['year'], ace_table['month'], ace_table['day'], ace_table['hhmm']), name="datetime")
+    datetime_col = Column(
+        _convert_time_format(
+            ace_table["year"], ace_table["month"], ace_table["day"], ace_table["hhmm"]
+        ),
+        name="Time",
+    )
     ace_table.add_column(datetime_col)
-    
-    return unique(ace_table, keys='datetime')
+
+    return unique(ace_table, keys="Time")
+
 
 def write_ace_files(ace_table, event_data, pathing_dict):
     """Write ACE data and statistics to human-reference text file.
 
-    :param ace_table: ACE data table read from ``INTERRUPT_DIR/Data``.
+    :param goes_table: ACE data table read from :func:`~interruption.ace_data_set.fetch_ace_data`.
     :type ace_table: astropy.table.Table
     :param event_data: A dictionary which stores interruption data.
     :type event_data: dict(str, datetime or float or str)
@@ -155,7 +199,7 @@ def write_ace_files(ace_table, event_data, pathing_dict):
             else:
                 substring += f"{row[channel]:.3e}\t\t"
         line += f"{substring}\n"
-    
+
     ifile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Data_dir", f"{event_data['name']}_ace.txt"
     )
@@ -190,7 +234,7 @@ def write_ace_files(ace_table, event_data, pathing_dict):
         val_intt = interrupt_row[channel]
 
         line += f"{channel}\t\t{avg:.3e}+/-{std:.3e}\t{max:.3e}\t{maxtime}\t{min:.3e}\t{mintime}\t{val_intt}\n"
-        
+
     ifile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{event_data['name']}_ace_stat"
     )
@@ -203,6 +247,143 @@ def write_ace_files(ace_table, event_data, pathing_dict):
         f.write(line)
     if ifile != ifile2:
         shutil.copy(ifile, ifile2)
+
+def plot_ace_data(ace_table, event_data, pathing_dict):
+    """Create a plot of ACE channel data.
+
+    :param goes_table: ACE data table read from :func:`~interruption.ace_data_set.fetch_ace_data`.
+    :type goes_table: astropy.table.Table
+    :param event_data: A dictionary which stores interruption data.
+    :type event_data: dict(str, datetime or float or str)
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+    :File Out: Writes the ``<event_name>_ace.png`` plots to the two ``OUT_WEB_DIR/ACE_plot`` directories.
+
+    """
+    zones = rad_zones.filter(
+        start=event_data["tstart"] - timedelta(days=2),
+        stop=event_data["tstop"] + timedelta(days=2),
+    ).table
+    fig = plt.figure(figsize=(10, 6.7))
+    fig.clf()
+
+    times = ace_table["Time"].data
+    #
+    # --- Reference Information
+    #
+    ylab = "Log$_{10}$"
+    date_format = mdates.DateFormatter("%j")
+    deltatime = event_data["tstop"] - event_data["tstart"]
+    ymin = 1
+    ymax = 6
+    int_label = 5
+    plt.subplots_adjust(hspace=0.08)
+    #
+    # --- Electron set
+    #
+    ax1 = fig.add_subplot(2, 1, 1)
+    ax1.xaxis.set_major_formatter(date_format)
+    ax1.set_ylim(ymin, ymax, auto=False)
+    ax1.set_ylabel(f"{ylab}(Electron/cm2-q-sr-KeV) Rate)", fontsize=9)
+    ax1.grid()
+    
+    for label in ax1.get_xticklabels():
+                label.set_visible(False)
+    for i, channel in enumerate(_ELECTRON_CHANNEL_SELECT):
+        #
+        # --- Map values to a logarithmic scale, deselecting missing or values of zero
+        #
+        m = ace_table[channel].data
+        mapped_vals = np.log10(m, out=np.zeros_like(m, dtype=float), where=(m > 0))
+        sel = mapped_vals != 0
+        plt.plot(times[sel], mapped_vals[sel], lw = 1, **_ELECTRON_PLOT_KWARGS[i])
+    #
+    #--- Legend
+    #
+    leg1 = plt.legend([x.capitalize() for x in _ELECTRON_CHANNEL_SELECT])
+    leg1.get_frame().set_alpha(0.5)
+    #
+    # --- Plot Indicator Lines
+    #
+    plt.axvline(event_data["tstart"], color="red", lw=2)  # Event Start
+    plt.axvline(event_data["tstop"], color="red", lw=2)  # Event Ending
+    #
+    # --- Plot Labels
+    #
+    
+    plt.text(
+        event_data["tstart"] + (0.025 * deltatime),
+        int_label,
+        r"Interruption",
+        color="red",
+    )  # Interruption Marker
+    #
+    # --- Plot of radiation zones
+    #
+    for row in zones:
+        start = datetime.strptime(str(row["start"]).split(".")[0], "%Y:%j:%H:%M:%S")
+        stop = datetime.strptime(str(row["stop"]).split(".")[0], "%Y:%j:%H:%M:%S")
+        plt.plot(
+            [start, stop], [ymin, ymin], color="purple", lw=8
+        )  # Radiation Zone
+    
+    #
+    # --- Proton set
+    #
+    ax2 = fig.add_subplot(2, 1, 2, sharex=ax1)
+    ax2.xaxis.set_major_formatter(date_format)
+    ax2.set_xlabel("Day of Year", fontsize=9)
+    ax2.set_ylim(ymin, ymax, auto=False)
+    ax2.set_ylabel(f"{ylab}(Proton/cm2-q-sr-KeV) Rate)", fontsize=9)
+    ax2.grid()
+    for i, channel in enumerate(_PROTON_CHANNEL_SELECT):
+        #
+        # --- Map values to a logarithmic scale, deselecting missing or values of zero
+        #
+        m = ace_table[channel].data
+        mapped_vals = np.log10(m, out=np.zeros_like(m, dtype=float), where=(m > 0))
+        sel = mapped_vals != 0
+        plt.plot(times[sel], mapped_vals[sel], lw = 1, **_PROTON_PLOT_KWARGS[i])
+    #
+    #--- Legend
+    #
+    leg2 = plt.legend([x.capitalize() for x in _PROTON_CHANNEL_SELECT])
+    leg2.get_frame().set_alpha(0.5)
+    #
+    # --- Plot Indicator Lines
+    #
+    plt.axvline(event_data["tstart"], color="red", lw=2)  # Event Start
+    plt.axvline(event_data["tstop"], color="red", lw=2)  # Event Ending
+    #
+    # --- Plot Labels
+    #
+    
+    plt.text(
+        event_data["tstart"] + (0.025 * deltatime),
+        int_label,
+        r"Interruption",
+        color="red",
+    )  # Interruption Marker
+    #
+    # --- Plot of radiation zones
+    #
+    for row in zones:
+        start = datetime.strptime(str(row["start"]).split(".")[0], "%Y:%j:%H:%M:%S")
+        stop = datetime.strptime(str(row["stop"]).split(".")[0], "%Y:%j:%H:%M:%S")
+        plt.plot(
+            [start, stop], [ymin, ymin], color="purple", lw=8
+        )  # Radiation Zone
+    ofile = os.path.join(
+        pathing_dict["OUT_WEB_DIR"], "ACE_plot", f"{event_data['name']}_ace.png"
+    )
+    ofile2 = os.path.join(
+        pathing_dict["OUT_WEB_DIR2"], "ACE_plot", f"{event_data['name']}_ace.png"
+    )
+    os.makedirs(os.path.dirname(ofile), exist_ok=True)
+    os.makedirs(os.path.dirname(ofile2), exist_ok=True)
+    plt.savefig(ofile, format="png", dpi=300)
+    plt.savefig(ofile2, format="png", dpi=300)
+
 #
 # --- Internal functions to assist cleanly formatting the input ACE table from text to astropy table
 #
@@ -218,8 +399,9 @@ def _round_down(dt):
     delta_min = dt.minute % 5
     return datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute - delta_min)
 
+
 @np.vectorize
-def _convert_time_format(year,month,day,hhmm):
+def _convert_time_format(year, month, day, hhmm):
     """Converts separated ``numpy.ndarray`` containing date information into an array of ``DateTime`` objects.
 
     :param year: Four digit year
@@ -234,9 +416,12 @@ def _convert_time_format(year,month,day,hhmm):
     :rtype: ``numpy.ndarray(dtype = 'object')``
 
     """
-    hh = hhmm // 100 #: hours in hundreds and thousands place
-    mm = hhmm % 100 #: minutes in tens and ones place
-    return datetime.strptime(f"{year:04}:{month:02}:{day:02}:{hh:02}:{mm:02}", "%Y:%m:%d:%H:%M")
+    hh = hhmm // 100  #: hours in hundreds and thousands place
+    mm = hhmm % 100  #: minutes in tens and ones place
+    return datetime.strptime(
+        f"{year:04}:{month:02}:{day:02}:{hh:02}:{mm:02}", "%Y:%m:%d:%H:%M"
+    )
+
 
 def _single_file_fetch(time_start, time_stop, pathing_dict):
     """Fetch ACE data from a single archive file.
@@ -303,9 +488,10 @@ def _single_file_fetch(time_start, time_stop, pathing_dict):
             elif error.returncode == 2:
                 raise FileNotFoundError(f"{data_file}")
         if time_stop < time_start:
-            raise ValueError(f"Cannot find stop time line in {data_file}.")        
-    ace_table = ascii.read(data_file, data_start = data_start, data_end = data_stop)
+            raise ValueError(f"Cannot find stop time line in {data_file}.")
+    ace_table = ascii.read(data_file, data_start=data_start, data_end=data_stop)
     return ace_table
+
 
 def _double_file_fetch(time_start, time_stop, pathing_dict):
     """Fetch ACE data from a two archive files. For use in the event an interruption spans across the new year.
@@ -339,7 +525,13 @@ def _double_file_fetch(time_start, time_stop, pathing_dict):
     while data_start is None:
         try:
             data_start_search = f"grep -in '{time_start.strftime(_ACE_INPUT_DATA_TIME_FORMAT)}' {data_file_start}"
-            data_start = int(subprocess.check_output(data_start_search, shell = True, executable = '/bin/csh').decode().split(":")[0])
+            data_start = int(
+                subprocess.check_output(
+                    data_start_search, shell=True, executable="/bin/csh"
+                )
+                .decode()
+                .split(":")[0]
+            )
         except subprocess.CalledProcessError as error:
             if error.returncode == 1:
                 #
@@ -356,7 +548,13 @@ def _double_file_fetch(time_start, time_stop, pathing_dict):
     while data_stop is None:
         try:
             data_stop_search = f"grep -in '{time_stop.strftime(_ACE_INPUT_DATA_TIME_FORMAT)}' {data_file_stop}"
-            data_stop = int(subprocess.check_output(data_stop_search, shell = True, executable = '/bin/csh').decode().split(":")[0])
+            data_stop = int(
+                subprocess.check_output(
+                    data_stop_search, shell=True, executable="/bin/csh"
+                )
+                .decode()
+                .split(":")[0]
+            )
         except subprocess.CalledProcessError as error:
             if error.returncode == 1:
                 #
@@ -367,7 +565,7 @@ def _double_file_fetch(time_start, time_stop, pathing_dict):
                 raise FileNotFoundError(f"{data_file_stop}")
         if time_stop.year == time_start.year:
             raise ValueError(f"Cannot find start time line in {data_file_stop}.")
-    a = ascii.read(data_file_start, data_start = data_start)
-    b = ascii.read(data_file_stop, data_end = data_stop)
-    ace_table = vstack([a,b])
+    a = ascii.read(data_file_start, data_start=data_start)
+    b = ascii.read(data_file_stop, data_end=data_stop)
+    ace_table = vstack([a, b])
     return ace_table
