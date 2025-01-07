@@ -151,11 +151,7 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
         ace_table = _single_file_fetch(time_start, time_stop, pathing_dict)
     elif time_start.year != time_stop.year:  # Two Year Files
         ace_table = _double_file_fetch(time_start, time_stop, pathing_dict)
-    #
-    # --- Reformat columns for easier processing
-    #
-    for i, col in enumerate(_INPUT_ACE_COLUMNS):
-        ace_table.rename_column(f"col{i+1}", col)
+
     #
     # --- Format complete time column
     #
@@ -489,7 +485,7 @@ def _single_file_fetch(time_start, time_stop, pathing_dict):
                 raise FileNotFoundError(f"{data_file}")
         if time_stop < time_start:
             raise ValueError(f"Cannot find stop time line in {data_file}.")
-    ace_table = ascii.read(data_file, data_start=data_start, data_end=data_stop)
+    ace_table = ascii.read(data_file, data_start=data_start, data_end=data_stop, names = _INPUT_ACE_COLUMNS)
     return ace_table
 
 
@@ -565,7 +561,7 @@ def _double_file_fetch(time_start, time_stop, pathing_dict):
                 raise FileNotFoundError(f"{data_file_stop}")
         if time_stop.year == time_start.year:
             raise ValueError(f"Cannot find start time line in {data_file_stop}.")
-    a = ascii.read(data_file_start, data_start=data_start)
-    b = ascii.read(data_file_stop, data_end=data_stop)
+    a = ascii.read(data_file_start, data_start=data_start, names = _INPUT_ACE_COLUMNS)
+    b = ascii.read(data_file_stop, data_end=data_stop, names = _INPUT_ACE_COLUMNS)
     ace_table = vstack([a, b])
     return ace_table
