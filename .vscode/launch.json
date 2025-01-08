@@ -5,6 +5,29 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python Debugger: 2024 Dec Science Interruption",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/interruption/run_interruption.py",
+            "console": "integratedTerminal",
+            "args": [
+                "-m",
+                "test",
+                "--start",
+                "2024:12:31:17:17:09",
+                "--stop",
+                "2025:01:03:04:06:24",
+                "-r",
+                "manual"
+            ],
+            // launch.json mimics only relevant skare env setup
+            "env": {
+                "SKA": "/proj/sot/ska3/flight",
+                "SKA_LIB": "/proj/sot/ska3/flight/lib",
+                "SKA_DATA": "/proj/sot/ska3/flight/data",
+            }
+        },
+        {
             "name": "Python Debugger: 2021 Oct Science Interruption",
             "type": "debugpy",
             "request": "launch",

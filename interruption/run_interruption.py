@@ -75,7 +75,7 @@ def generate_event_dict(start, stop, name=None):
     :raises ValueError: If the calculated lost science time exceeds :data:`~interruption.run_interruption.MAX_TIME_LOST`.
         This is because there is likely a user error in the start and stop times provided in the command line arguments.
     :return: **event_data** - A dictionary which stores interruption data.
-    :rtype: dict(str, datetime or float or str)
+    :rtype: dict(str, cxotime or float or str)
 
     """
     tstart = None
@@ -103,13 +103,13 @@ def generate_event_dict(start, stop, name=None):
     if name is None:
         name = tstart.strftime("%Y%m%d")
 
-    chandra_start = CxoTime(tstart.strftime("%Y:%j:%H:%M:%S"))
-    chandra_stop = CxoTime(tstop.strftime("%Y:%j:%H:%M:%S"))
+    tstart = CxoTime(tstart.strftime("%Y:%j:%H:%M:%S"))
+    tstop = CxoTime(tstop.strftime("%Y:%j:%H:%M:%S"))
 
-    zones = rad_zones.filter(start=chandra_start, stop=chandra_stop).table
+    zones = rad_zones.filter(start=tstart, stop=tstop).table
     zones_duration_secs = np.sum(zones["dur"])
     science_time_lost_secs = (
-        chandra_stop.secs - chandra_start.secs - zones_duration_secs
+        tstop.secs - tstart.secs - zones_duration_secs
     )
     if science_time_lost_secs > MAX_TIME_LOST:
         raise ValueError(
@@ -132,7 +132,7 @@ def supplemental_files(event_data, pathing_dict):
     """Write supplemental radiation event information to additional files.
 
     :param event_data: A dictionary which stores interruption data.
-    :type event_data: dict(str, datetime or float or str)
+    :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :File Out: Writes the ``rad_zone_list`` file containing radiation zone information to the ``DATA_DIR`` directory.
@@ -146,14 +146,12 @@ def supplemental_files(event_data, pathing_dict):
     os.makedirs(os.path.dirname(ifile), exist_ok=True)
     if os.path.exists(ifile):
         with open(ifile) as f:
-            data = [line.strip().split() for line in f.readlines()]
+            data = [line.strip().split('\t') for line in f.readlines()]
         for entry in data:
             zones_shutdown[entry[0]] = entry[1].split(":")
 
-    chandra_start = CxoTime(event_data["tstart"].strftime("%Y:%j:%H:%M:%S"))
-    chandra_stop = CxoTime(event_data["tstop"].strftime("%Y:%j:%H:%M:%S"))
     table = rad_zones.filter(
-        start=chandra_start.secs - (3 * 86400.0), stop=chandra_stop.secs + (5 * 86400.0)
+        start=event_data["tstart"].secs - (3 * 86400.0), stop=event_data["tstop"].secs + (5 * 86400.0)
     ).table
     event_zones = []
     for row in table:
@@ -176,7 +174,7 @@ def run_interrupt(event_data, pathing_dict):
     """Run all interruption data set collection and plotting scripts, then write content to a single interruption report.
 
     :param event_data: A dictionary which stores interruption data.
-    :type event_data: dict(str, datetime or float or str)
+    :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :File Out:
