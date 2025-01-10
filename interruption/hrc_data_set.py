@@ -59,7 +59,7 @@ def hrc_data_set(event_data, pathing_dict):
     """Collect together HRC data for plotting, statistics, and storage by using ``cheta.fetch``.
 
     :param event_data: A dictionary which stores interruption data.
-    :type event_data: dict(str, datetime or float or str)
+    :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :Note: The HRC shield only actively takes data during usage of the HRC instrument.
@@ -84,7 +84,7 @@ def write_hrc_files(fetch_result, event_data, pathing_dict):
     :param fetch_result: ``cheta.fetch.MSIDset()`` result for the 2SHEV2RT MSID.
     :type fetch_result: cheta.fetch.MSIDset
     :param event_data: A dictionary which stores interruption data.
-    :type event_data: dict(str, datetime or float or str)
+    :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :File Out: Writes the ``<event_name>_hrc.txt`` data table to the two ``OUT_WEB_DIR/Data_dir`` directories,
@@ -100,6 +100,7 @@ def write_hrc_files(fetch_result, event_data, pathing_dict):
     times = convert_time_format(
         fetch_result[_MSIDS[0]].times, fmt_in="secs", fmt_out="date"
     )
+    times = [x.split('.')[0] for x in times]
     vals_group = []
     for msid in _MSIDS:
         vals_group.append(fetch_result[msid].vals)
@@ -131,15 +132,15 @@ def write_hrc_files(fetch_result, event_data, pathing_dict):
 
         maxidx = np.argmax(fetch_result[msid].vals)
         max = fetch_result[msid].vals[maxidx]
-        maxtime = CxoTime(fetch_result[msid].times[maxidx]).date
+        maxtime = CxoTime(fetch_result[msid].times[maxidx]).strftime("%Y:%j:%H:%M:%S")
 
         minidx = np.argmin(fetch_result[msid].vals)
         min = fetch_result[msid].vals[minidx]
-        mintime = CxoTime(fetch_result[msid].times[minidx]).date
+        mintime = CxoTime(fetch_result[msid].times[minidx]).strftime("%Y:%j:%H:%M:%S")
 
         a = CxoTime(event_data["tstart"]).secs
         timeidx = np.abs(fetch_result[msid].times - a).argmin()
-        val_intt = CxoTime(fetch_result[msid].times[timeidx]).date
+        val_intt = CxoTime(fetch_result[msid].times[timeidx]).strftime("%Y:%j:%H:%M:%S")
 
         line += f"{msid}\t\t{avg:.3e}+/-{std:.3e}\t{max:.3e}\t{maxtime}\t{min:.3e}\t{mintime}\t{val_intt}\n"
 
@@ -163,7 +164,7 @@ def plot_hrc_data(fetch_result, event_data, pathing_dict):
     :param fetch_result: ``cheta.fetch.MSIDset()`` result for the 2SHEV2RT MSID.
     :type fetch_result: cheta.fetch.MSIDset
     :param event_data: A dictionary which stores interruption data.
-    :type event_data: dict(str, datetime or float or str)
+    :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :File Out: Writes the ``<event_name>_hrc.png`` plots to the two ``OUT_WEB_DIR/HRC_plot`` directories.
@@ -187,8 +188,8 @@ def plot_hrc_data(fetch_result, event_data, pathing_dict):
     # --- Indicator Lines
     #
     plt.axhline(4.80, color="red", linestyle="--", lw=1.0)  # Violation Threshold
-    plt.axvline(event_data["tstart"], color="red", lw=2)  # Event Start
-    plt.axvline(event_data["tstop"], color="red", lw=2)  # Event Ending
+    plt.axvline(event_data["tstart"].datetime, color="red", lw=2)  # Event Start
+    plt.axvline(event_data["tstop"].datetime, color="red", lw=2)  # Event Ending
     for row in zones:
         start = datetime.strptime(str(row["start"]).split(".")[0], "%Y:%j:%H:%M:%S")
         stop = datetime.strptime(str(row["stop"]).split(".")[0], "%Y:%j:%H:%M:%S")
@@ -197,9 +198,9 @@ def plot_hrc_data(fetch_result, event_data, pathing_dict):
     # --- Labels
     #
     plt.ylabel("Log$_{10}$ (HRC Shield Event Rate)", fontsize=9)  # Y Label
-    deltatime = event_data["tstop"] - event_data["tstart"]
+    deltatime = event_data["tstop"].datetime - event_data["tstart"].datetime
     plt.text(
-        event_data["tstart"] + (0.01 * deltatime), 4.6, r"Interruption", color="red"
+        event_data["tstart"].datetime + (0.01 * deltatime), 4.6, r"Interruption", color="red"
     )  # Interruption Marker
     ofile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "HRC_plot", f"{event_data['name']}_hrc.png"

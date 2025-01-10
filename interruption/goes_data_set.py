@@ -12,6 +12,8 @@
 import os
 import numpy as np
 from datetime import datetime, timedelta
+from cxotime import CxoTime
+from Ska.Matplotlib import plot_cxctime
 from kadi.events import rad_zones
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -36,7 +38,7 @@ _PATHING_DICT = {
     "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
 }  #: Dictionary of input and output file paths for collecting GOES interruption data.
 _FETCH_INTERVAL = 2 #: Number of days before and after interruption period to fetch trending data from.
-_GOES_DATA_TIME_FORMAT = "%Y:%j:%H:%M:%S"  #: Conversion format between file archive time to ``Datetime`` objects.
+_GOES_DATA_TIME_FORMAT = "%Y:%j:%H:%M:%S"  #: Conversion format between file archive time to ``cxotime`` objects.
 _GOES_CHANNEL_SELECT = [
     "P4",
     "P5",
@@ -68,7 +70,7 @@ def goes_data_set(event_data, pathing_dict):
     """Intakes data from the Space Weather GOES data archive in ``SPACE_WEATHER_DIR`` into an ``astropy.table`` and uses data for plotting and statistics.
 
     :param event_data: A dictionary which stores interruption data.
-    :type event_data: dict(str, datetime or float or str)
+    :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
 
@@ -84,9 +86,9 @@ def fetch_GOES_data(time_start, time_stop, pathing_dict):
     """Fetch GOES data from the ``SPACE_WEATHER_DIR/GOES/Data/goes_data_r.txt`` archive file and format into an astropy table.
 
     :param time_start: Starting time for data fetch, defaults to two days before the start of the interruption event.
-    :type time_start: ``DateTime``
+    :type time_start: ``CxoTime``
     :param time_stop: Stopping time for data fetch, defaults to two days after the start of the interruption event.
-    :type time_stop: ``DateTime``
+    :type time_stop: ``CxoTime``
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :raises ValueError: If the ``event_data['tstart']`` starting time or ``event_data['tstop']`` stopping time data entires cannot be found in the Space Weather GOES data archive.
@@ -94,7 +96,7 @@ def fetch_GOES_data(time_start, time_stop, pathing_dict):
     :return: Table of unique GOES data points spanning interruption event.
     :rtype: ``astropy.table.Table``
     :Note: While algorithmically very similar to the data fetch performed in the :mod:`~interruption.ace_data_set` script,
-        this table stores the time column as a string rather than a ``DateTime`` object to reduce computation due to how GOES archive data files are stored.
+        this table stores the time column as a string rather than a ``CxoTime`` object to reduce computation due to how GOES archive data files are stored.
 
     """
     data_file = os.path.join(
@@ -169,7 +171,7 @@ def write_goes_files(goes_table, event_data, pathing_dict):
     :param goes_table: GOES data table read from :func:`~interruption.goes_data_set.fetch_goes_data`.
     :type goes_table: astropy.table.Table
     :param event_data: A dictionary which stores interruption data.
-    :type event_data: dict(str, datetime or float or str)
+    :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :File Out: Writes the ``<event_name>_goes.txt`` data table to the two ``OUT_WEB_DIR/Data_dir`` directories,
@@ -207,7 +209,7 @@ def write_goes_files(goes_table, event_data, pathing_dict):
     #
     # --- Write Stat File.
     #
-    sel = goes_table["Time"] == event_data["tstart"].strftime(_GOES_DATA_TIME_FORMAT)
+    sel = goes_table["Time"] == _round_down(event_data["tstart"]).strftime(_GOES_DATA_TIME_FORMAT)
     interrupt_row = goes_table[sel][0]
     line = _GOES_STAT_HEADER
     for channel in _GOES_CHANNEL_SELECT:
@@ -246,7 +248,7 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
     :param goes_table: GOES data table read from :func:`~interruption.goes_data_set.fetch_goes_data`.
     :type goes_table: astropy.table.Table
     :param event_data: A dictionary which stores interruption data.
-    :type event_data: dict(str, datetime or float or str)
+    :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :File Out: Writes the ``<event_name>_goes.png`` plots to the two ``OUT_WEB_DIR/GOES_plot`` directories.
@@ -259,14 +261,14 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
     fig = plt.figure(figsize=(10, 6.7))
     fig.clf()
 
-    times = _convert_time_format(goes_table["Time"].data)
+    times = CxoTime(goes_table["Time"])
     #
     # --- Reference Information
     #
     n_axes = len(_GOES_CHANNEL_SELECT)
     ylab = "Log$_{10}$"
     date_format = mdates.DateFormatter("%j")
-    deltatime = event_data["tstop"] - event_data["tstart"]
+    deltatime = event_data["tstop"].datetime - event_data["tstart"].datetime
 
     for i, channel in enumerate(_GOES_CHANNEL_SELECT):
         if i == 0:
@@ -298,18 +300,19 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
         m = goes_table[channel].data
         mapped_vals = np.log10(m, out=np.zeros_like(m, dtype=float), where=(m > 0))
         sel = mapped_vals != 0
-        plt.plot(times[sel], mapped_vals[sel], **_PLOT_KWARGS)
+        #plt.plot(times[sel], mapped_vals[sel], **_PLOT_KWARGS) #: Alternative
+        plot_cxctime(times[sel], mapped_vals[sel], **_PLOT_KWARGS)
         #
         # --- Plot Indicator Lines
         #
-        plt.axvline(event_data["tstart"], color="red", lw=2)  # Event Start
-        plt.axvline(event_data["tstop"], color="red", lw=2)  # Event Ending
+        plt.axvline(event_data["tstart"].datetime, color="red", lw=2)  # Event Start
+        plt.axvline(event_data["tstop"].datetime, color="red", lw=2)  # Event Ending
         #
         # --- Plot Labels
         #
         ax.set_ylabel(f"{ylab}({channel.replace('_', ' ')} Rate)", fontsize=9)
         plt.text(
-            event_data["tstart"] + (0.025 * deltatime),
+            event_data["tstart"].datetime + (0.025 * deltatime),
             int_label,
             r"Interruption",
             color="red",
@@ -340,25 +343,14 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
 # --- Internal functions to assist cleanly formatting the input GOES table
 #
 def _round_down(dt):
-    """Round a DateTime object down to the nearest five minutes. For use in fetching from data files.
+    """Round a CxoTime object down to the nearest five minutes. For use in fetching from data files.
 
-    :param dt: A ``DateTime`` object of any kind
-    :type dt: DateTime
-    :return: The input ``DateTime`` object rounded down to the nearest five minutes.
-    :rtype: DateTime
+    :param dt: A ``CxoTime`` object of any kind
+    :type dt: CxoTime
+    :return: The input ``CxoTime`` object rounded down to the nearest five minutes.
+    :rtype: CxoTime
 
     """
+    dt = dt.datetime
     delta_min = dt.minute % 5
-    return datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute - delta_min)
-
-
-@np.vectorize
-def _convert_time_format(string):
-    """Converts a ``numpy.ndarray`` containing strings into an array of ``DateTime`` objects.
-
-    :param string: ``numpy.ndarray`` of strings in the :data:`~interruption.goes_data_set._GOES_DATA_TIME_FORMAT` format.
-    :type string: ``numpy.ndarray(dtype = '<U16')``
-    :return: ``numpy.ndarray`` of ``DateTime`` objects.
-    :rtype: ``numpy.ndarray(dtype = 'object')``
-    """
-    return datetime.strptime(string, _GOES_DATA_TIME_FORMAT)
+    return CxoTime(datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute - delta_min))
