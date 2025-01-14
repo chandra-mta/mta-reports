@@ -12,10 +12,12 @@
 
 import os
 import numpy as np
+from cxotime import CxoTime
 from datetime import datetime, timedelta
 from kadi.events import rad_zones
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from Ska.Matplotlib import plot_cxctime
 import shutil
 from astropy.io import ascii
 from astropy.table import vstack, Column, unique
@@ -115,7 +117,7 @@ def ace_data_set(event_data, pathing_dict):
     """Intakes data from the ACE data archive in ``INTERRUPT_DIR`` into an ``astropy.table`` and uses data for plotting and statistics.
 
     :param event_data: A dictionary which stores interruption data.
-    :type event_data: dict(str, datetime or float or str)
+    :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
 
@@ -132,24 +134,24 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
     """Fetch ACE data from the ``INTERRUPT_DIR/Data`` archive files and format into an astropy table.
 
     :param time_start: Starting time for data fetch, defaults to two days before the start of the interruption event.
-    :type time_start: ``DateTime``
+    :type time_start: ``CxoTime``
     :param time_stop: Stopping time for data fetch, defaults to two days after the start of the interruption event.
-    :type time_stop: ``DateTime``
+    :type time_stop: ``CxoTime``
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :return: Table of unique ACE data points spanning interruption event.
     :rtype: ``astropy.table.Table``
     :Note: While algorithmically very similar to the data fetch performed in the :mod:`~interruption.goes_data_set` script,
-        this table stores the time column as a ``DateTime`` object rather than a string to reduce computation due to how ACE archive data files are stored.
+        this table stores the time column as a ``CxoTime`` object rather than a string to reduce computation due to how ACE archive data files are stored.
 
     """
     #
     # --- Check if the interruption spans over the new year
     # --- and therefore need to construct ACE data table from two files.
     #
-    if time_start.year == time_stop.year:  # One Year File
+    if time_start.datetime.year == time_stop.datetime.year:  # One Year File
         ace_table = _single_file_fetch(time_start, time_stop, pathing_dict)
-    elif time_start.year != time_stop.year:  # Two Year Files
+    elif time_start.datetime.year != time_stop.datetime.year:  # Two Year Files
         ace_table = _double_file_fetch(time_start, time_stop, pathing_dict)
 
     #
@@ -159,11 +161,11 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
         _convert_time_format(
             ace_table["year"], ace_table["month"], ace_table["day"], ace_table["hhmm"]
         ),
-        name="Time",
+        name="cxotime",
     )
     ace_table.add_column(datetime_col)
 
-    return unique(ace_table, keys="Time")
+    return unique(ace_table, keys="cxotime")
 
 
 def write_ace_files(ace_table, event_data, pathing_dict):
@@ -172,7 +174,7 @@ def write_ace_files(ace_table, event_data, pathing_dict):
     :param goes_table: ACE data table read from :func:`~interruption.ace_data_set.fetch_ace_data`.
     :type ace_table: astropy.table.Table
     :param event_data: A dictionary which stores interruption data.
-    :type event_data: dict(str, datetime or float or str)
+    :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :raises ValueError: If the starting or stopping time line of data cannot be found in the data archive.
@@ -188,7 +190,7 @@ def write_ace_files(ace_table, event_data, pathing_dict):
         "#LSTART", event_data["tstart"].strftime("%Y:%m:%d:%H:%M")
     )
     for row in ace_table:
-        substring = f"{row['Time']}\t\t"
+        substring = f"{str(row['cxotime']).split('.')[0]}\t\t"
         for channel in _ACE_CHANNEL_SELECT:
             if channel == _ACE_CHANNEL_SELECT[-1]:
                 substring += f"{row[channel]}"
@@ -212,7 +214,7 @@ def write_ace_files(ace_table, event_data, pathing_dict):
     #
     # --- Write Stat File.
     #
-    sel = ace_table["Time"] == event_data["tstart"]
+    sel = ace_table["cxotime"] == _round_down(event_data["tstart"])
     interrupt_row = ace_table[sel][0]
     line = _ACE_STAT_HEADER
     for channel in _ACE_CHANNEL_SELECT:
@@ -221,11 +223,11 @@ def write_ace_files(ace_table, event_data, pathing_dict):
 
         maxidx = np.argmax(ace_table[channel].data)
         max = ace_table[channel][maxidx]
-        maxtime = ace_table["Time"][maxidx].strftime(_ACE_DATA_TIME_FORMAT)
+        maxtime = ace_table["cxotime"][maxidx].strftime(_ACE_DATA_TIME_FORMAT)
 
         minidx = np.argmin(ace_table[channel].data)
         min = ace_table[channel][minidx]
-        mintime = ace_table["Time"][minidx].strftime(_ACE_DATA_TIME_FORMAT)
+        mintime = ace_table["cxotime"][minidx].strftime(_ACE_DATA_TIME_FORMAT)
 
         val_intt = interrupt_row[channel]
 
@@ -250,7 +252,7 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
     :param goes_table: ACE data table read from :func:`~interruption.ace_data_set.fetch_ace_data`.
     :type goes_table: astropy.table.Table
     :param event_data: A dictionary which stores interruption data.
-    :type event_data: dict(str, datetime or float or str)
+    :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :File Out: Writes the ``<event_name>_ace.png`` plots to the two ``OUT_WEB_DIR/ACE_plot`` directories.
@@ -263,13 +265,13 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
     fig = plt.figure(figsize=(10, 6.7))
     fig.clf()
 
-    times = ace_table["Time"].data
+    times = ace_table["cxotime"]
     #
     # --- Reference Information
     #
     ylab = "Log$_{10}$"
     date_format = mdates.DateFormatter("%j")
-    deltatime = event_data["tstop"] - event_data["tstart"]
+    deltatime = event_data["tstop"].datetime - event_data["tstart"].datetime
     ymin = 1
     ymax = 6
     int_label = 5
@@ -292,7 +294,7 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
         m = ace_table[channel].data
         mapped_vals = np.log10(m, out=np.zeros_like(m, dtype=float), where=(m > 0))
         sel = mapped_vals != 0
-        plt.plot(times[sel], mapped_vals[sel], lw = 1, **_ELECTRON_PLOT_KWARGS[i])
+        plot_cxctime(times[sel], mapped_vals[sel], lw = 1, **_ELECTRON_PLOT_KWARGS[i])
     #
     #--- Legend
     #
@@ -301,14 +303,14 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
     #
     # --- Plot Indicator Lines
     #
-    plt.axvline(event_data["tstart"], color="red", lw=2)  # Event Start
-    plt.axvline(event_data["tstop"], color="red", lw=2)  # Event Ending
+    plt.axvline(event_data["tstart"].datetime, color="red", lw=2)  # Event Start
+    plt.axvline(event_data["tstop"].datetime, color="red", lw=2)  # Event Ending
     #
     # --- Plot Labels
     #
     
     plt.text(
-        event_data["tstart"] + (0.025 * deltatime),
+        event_data["tstart"].datetime + (0.025 * deltatime),
         int_label,
         r"Interruption",
         color="red",
@@ -339,7 +341,7 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
         m = ace_table[channel].data
         mapped_vals = np.log10(m, out=np.zeros_like(m, dtype=float), where=(m > 0))
         sel = mapped_vals != 0
-        plt.plot(times[sel], mapped_vals[sel], lw = 1, **_PROTON_PLOT_KWARGS[i])
+        plot_cxctime(times[sel], mapped_vals[sel], lw = 1, **_PROTON_PLOT_KWARGS[i])
     #
     #--- Legend
     #
@@ -348,14 +350,14 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
     #
     # --- Plot Indicator Lines
     #
-    plt.axvline(event_data["tstart"], color="red", lw=2)  # Event Start
-    plt.axvline(event_data["tstop"], color="red", lw=2)  # Event Ending
+    plt.axvline(event_data["tstart"].datetime, color="red", lw=2)  # Event Start
+    plt.axvline(event_data["tstop"].datetime, color="red", lw=2)  # Event Ending
     #
     # --- Plot Labels
     #
     
     plt.text(
-        event_data["tstart"] + (0.025 * deltatime),
+        event_data["tstart"].datetime + (0.025 * deltatime),
         int_label,
         r"Interruption",
         color="red",
@@ -384,21 +386,22 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
 # --- Internal functions to assist cleanly formatting the input ACE table from text to astropy table
 #
 def _round_down(dt):
-    """Round a DateTime object down to the nearest five minutes. For use in fetching from data files.
+    """Round a CxoTime object down to the nearest five minutes. For use in fetching from data files.
 
-    :param dt: A ``DateTime`` object of any kind
-    :type dt: DateTime
-    :return: The input ``DateTime`` object rounded down to the nearest five minutes.
-    :rtype: DateTime
+    :param dt: A ``CxoTime`` object of any kind
+    :type dt: CxoTime
+    :return: The input ``CxoTime`` object rounded down to the nearest five minutes.
+    :rtype: CxoTime
 
     """
+    dt = dt.datetime
     delta_min = dt.minute % 5
-    return datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute - delta_min)
+    return CxoTime(datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute - delta_min))
 
 
 @np.vectorize
 def _convert_time_format(year, month, day, hhmm):
-    """Converts separated ``numpy.ndarray`` containing date information into an array of ``DateTime`` objects.
+    """Converts separated ``numpy.ndarray`` containing date information into an array of ``CxoTime`` objects.
 
     :param year: Four digit year
     :type year: int
@@ -408,24 +411,24 @@ def _convert_time_format(year, month, day, hhmm):
     :type day: int
     :param hhmm: Integer Combining Hours and Minutes
     :type hhmm: int
-    :return: ``numpy.ndarray`` of ``DateTime`` objects.
+    :return: ``numpy.ndarray`` of ``CxoTime`` objects.
     :rtype: ``numpy.ndarray(dtype = 'object')``
 
     """
     hh = hhmm // 100  #: hours in hundreds and thousands place
     mm = hhmm % 100  #: minutes in tens and ones place
-    return datetime.strptime(
+    return CxoTime(datetime.strptime(
         f"{year:04}:{month:02}:{day:02}:{hh:02}:{mm:02}", "%Y:%m:%d:%H:%M"
-    )
+    ))
 
 
 def _single_file_fetch(time_start, time_stop, pathing_dict):
     """Fetch ACE data from a single archive file.
 
     :param time_start: Starting time for data fetch, defaults to two days before the start of the interruption event.
-    :type time_start: ``DateTime``
+    :type time_start: ``CxoTime``
     :param time_stop: Stopping time for data fetch, defaults to two days after the start of the interruption event.
-    :type time_stop: ``DateTime``
+    :type time_stop: ``CxoTime``
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :raises ValueError: If the starting or stopping time line of data cannot be found in the data archive.
@@ -437,7 +440,7 @@ def _single_file_fetch(time_start, time_stop, pathing_dict):
     data_start = None
     data_stop = None
     data_file = os.path.join(
-        pathing_dict["INTERRUPT_DIR"], "Data", f"rad_data{time_start.year}"
+        pathing_dict["INTERRUPT_DIR"], "Data", f"rad_data{time_start.datetime.year}"
     )
     #
     # --- Find data line for start
@@ -493,9 +496,9 @@ def _double_file_fetch(time_start, time_stop, pathing_dict):
     """Fetch ACE data from a two archive files. For use in the event an interruption spans across the new year.
 
     :param time_start: Starting time for data fetch, defaults to two days before the start of the interruption event.
-    :type time_start: ``DateTime``
+    :type time_start: ``CxoTime``
     :param time_stop: Stopping time for data fetch, defaults to two days after the start of the interruption event.
-    :type time_stop: ``DateTime``
+    :type time_stop: ``CxoTime``
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
     :raises ValueError: If the starting or stopping time line of data cannot be found in the data archive.
@@ -510,10 +513,10 @@ def _double_file_fetch(time_start, time_stop, pathing_dict):
     # --- Interruption occurred during the new year.Therefore fetch from two data files.
     #
     data_file_start = os.path.join(
-        pathing_dict["INTERRUPT_DIR"], "Data", f"rad_data{time_start.year}"
+        pathing_dict["INTERRUPT_DIR"], "Data", f"rad_data{time_start.datetime.year}"
     )
     data_file_stop = os.path.join(
-        pathing_dict["INTERRUPT_DIR"], "Data", f"rad_data{time_stop.year}"
+        pathing_dict["INTERRUPT_DIR"], "Data", f"rad_data{time_stop.datetime.year}"
     )
     #
     # --- Find data line for start
@@ -536,7 +539,7 @@ def _double_file_fetch(time_start, time_stop, pathing_dict):
                 time_start += timedelta(minutes=5)
             elif error.returncode == 2:
                 raise FileNotFoundError(f"{data_file_start}")
-        if time_start.year == time_stop.year:
+        if time_start.datetime.year == time_stop.datetime.year:
             raise ValueError(f"Cannot find start time line in {data_file_start}.")
     #
     # --- Find data line for stop
@@ -559,7 +562,7 @@ def _double_file_fetch(time_start, time_stop, pathing_dict):
                 time_stop -= timedelta(minutes=5)
             elif error.returncode == 2:
                 raise FileNotFoundError(f"{data_file_stop}")
-        if time_stop.year == time_start.year:
+        if time_stop.datetime.year == time_start.datetime.year:
             raise ValueError(f"Cannot find start time line in {data_file_stop}.")
     a = ascii.read(data_file_start, data_start=data_start, names = _INPUT_ACE_COLUMNS)
     b = ascii.read(data_file_stop, data_end=data_stop, names = _INPUT_ACE_COLUMNS)
