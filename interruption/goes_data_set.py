@@ -220,7 +220,8 @@ def write_goes_files(goes_table, event_data, pathing_dict):
         max = goes_table[channel][maxidx]
         maxtime = goes_table["Time"][maxidx]
 
-        minidx = np.argmin(goes_table[channel].data)
+        sel = goes_table[channel].data >= 0
+        minidx = np.argmin(goes_table[channel].data[sel])
         min = goes_table[channel][minidx]
         mintime = goes_table["Time"][minidx]
 

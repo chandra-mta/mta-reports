@@ -217,7 +217,7 @@ def write_ace_files(ace_table, event_data, pathing_dict):
     sel = ace_table["cxotime"] == _round_down(event_data["tstart"])
     interrupt_row = ace_table[sel][0]
     line = _ACE_STAT_HEADER
-    for channel in _ACE_CHANNEL_SELECT:
+    for channel in _ACE_CHANNEL_SELECT[:-1]:
         avg = np.mean(ace_table[channel].data)
         std = np.std(ace_table[channel].data)
 
@@ -225,7 +225,8 @@ def write_ace_files(ace_table, event_data, pathing_dict):
         max = ace_table[channel][maxidx]
         maxtime = ace_table["cxotime"][maxidx].strftime(_ACE_DATA_TIME_FORMAT)
 
-        minidx = np.argmin(ace_table[channel].data)
+        sel = ace_table[channel].data >= 0
+        minidx = np.argmin(ace_table[channel].data[sel])
         min = ace_table[channel][minidx]
         mintime = ace_table["cxotime"][minidx].strftime(_ACE_DATA_TIME_FORMAT)
 

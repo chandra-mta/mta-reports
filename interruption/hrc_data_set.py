@@ -134,7 +134,8 @@ def write_hrc_files(fetch_result, event_data, pathing_dict):
         max = fetch_result[msid].vals[maxidx]
         maxtime = CxoTime(fetch_result[msid].times[maxidx]).strftime("%Y:%j:%H:%M:%S")
 
-        minidx = np.argmin(fetch_result[msid].vals)
+        sel = fetch_result[msid].vals >= 0
+        minidx = np.argmin(fetch_result[msid].vals[sel])
         min = fetch_result[msid].vals[minidx]
         mintime = CxoTime(fetch_result[msid].times[minidx]).strftime("%Y:%j:%H:%M:%S")
 
