@@ -22,6 +22,7 @@ import getpass
 import hrc_data_set as hrc
 import goes_data_set as goes
 import ace_data_set as ace
+import xmm_data_set as xmm
 #
 # --- Define Directory Pathing
 #
@@ -181,15 +182,11 @@ def run_interrupt(event_data, pathing_dict):
 
     """
     print(f"Generating: {event_data['name']}")
-    supplemental_files(event_data, pathing_dict)
-    hrc.hrc_data_set(event_data, pathing_dict)
-    goes.goes_data_set(event_data, pathing_dict)
-    ace.ace_data_set(event_data, pathing_dict)
-    #
-    # ---- extract and plot XMM data
-    #
-    print("XMM")
-    # xmm.read_xmm_and_process(event_data, pathing_dict)
+    #supplemental_files(event_data, pathing_dict)
+    #hrc.hrc_data_set(event_data, pathing_dict)
+    #goes.goes_data_set(event_data, pathing_dict)
+    #ace.ace_data_set(event_data, pathing_dict)
+    xmm.xmm_data_set(event_data, pathing_dict)
     #
     # ---- create individual html page and main html page
     #
@@ -247,15 +244,15 @@ if __name__ == "__main__":
         # --- Change default pathing for test run
         #
         BIN_DIR = f"{os.getcwd()}"
-        os.makedirs(f"{BIN_DIR}/test/outTest", exist_ok=True)
+        os.makedirs(f"{BIN_DIR}/test/_outTest", exist_ok=True)
         pathing_dict = {
             "BIN_DIR": BIN_DIR,
-            "DATA_DIR": f"{BIN_DIR}/test/outTest",
-            "OUT_DATA_DIR": f"{BIN_DIR}/test/outTest",
-            "WEB_DIR": f"{BIN_DIR}/test/outTest",
-            "OUT_WEB_DIR": f"{BIN_DIR}/test/outTest",
-            "WEB_DIR2": f"{BIN_DIR}/test/outTest",
-            "OUT_WEB_DIR2": f"{BIN_DIR}/test/outTest",
+            "DATA_DIR": f"{BIN_DIR}/test/_outTest",
+            "OUT_DATA_DIR": f"{BIN_DIR}/test/_outTest",
+            "WEB_DIR": f"{BIN_DIR}/test/_outTest",
+            "OUT_WEB_DIR": f"{BIN_DIR}/test/_outTest",
+            "WEB_DIR2": f"{BIN_DIR}/test/_outTest",
+            "OUT_WEB_DIR2": f"{BIN_DIR}/test/_outTest",
             "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
             "INTERRUPT_DIR": INTERRUPT_DIR,
         }
