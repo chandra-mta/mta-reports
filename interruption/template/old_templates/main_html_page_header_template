@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title> Radiation Count Rate Plots for Periods Which Interrupted Science Runs </title>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<!-- #### CSS STYLE SHEET FILE #### -->
+<link rel="stylesheet" type="text/css" href="https://cxc.cfa.harvard.edu/mta/REPORTS/Template/mta_monthly.css" />
+<style  type='text/css'>
+table{text-align:center;margin-left:auto;margin-right:auto;border-style:solid;border-spacing:8px;border-width:2px;border-collapse:separate}
+</style>
+</head>
+
+<body>
+<h2>
+Radiation Count Rate Plots for Periods Which Interrupted Science Runs
+</h2>
+<p style="text-align:rightfont-weight:bold">
+Last Updated:  #DATE#
+</p>
+
+<p style="font-weight:boldpadding-left:4empadding-right:6em">
+The following plots are:
+<ul>
+<li>HRC Shield rate : after Year 2014</li>
+<li>E150 electron count rate (electron Counts/cm2 sed sr eV ) between Year 2006 and Year 2014</li>
+<li>P41 proton count rate  (15.0 -  40.0 MeV protons Counts/cm2 sec sr MeV) before Year 2006</li>
+</ul>
+around science runs were interrupted.  Plots start two days before the interruption
+started, and end 5 days after.  If the interruption period is longer than 5 days, the plots are
+extended accordingly. By click one of the plots, you can open the page displaying more information
+about that event. 
+</p>
+
+<p style="font-weight:boldpadding-left:4empadding-right:6em">
+If a plot is noted with "auto", the science run was automatically interrupted because the high radiation
+tripped one of the criteria. If it is noted with "manual", it was done by an operator's judgement.
+</p>
+
+<p style="font-weight:boldpadding-left:4empadding-right:6em">
+Note: Data points in 2000 Data are one hour average. All others are 5 min average.
+Plots after 2011 are siginficatlly different. Montoring of P4 and P41 were discontinued after
+year 2006 and replaced by e150 and e1500. After year 2014, they are again replaced by HRC shield rate.
+</p>
+<p style="font-weight:boldpadding-left:4empadding-right:6em">
+GOES data srouces chnaged from GOES 11 to GOES 15 at year 2000, and to GOES R after year 2020.
+</p>
+
+<hr />

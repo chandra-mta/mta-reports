@@ -1,0 +1,151 @@
+/* MTA CSS Style Sheet */
+
+
+/*
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+*/
+
+body{
+	background-color:#000000;
+        color:           #FFFACD;
+        font-family:     serif, sans-serif, Verdana, Helvetica, Arial;
+        font-size:       11pt;    
+        text-align:      justify;
+        color:           #FFF8DC;
+        margin:          20px;
+        padding:         10px;
+/*      background-image:url('http://asc.harvard.edu/mta/REPORTS/2009/stars.jpg'); */
+
+}
+    
+table{
+	color:	    	#FFFACD;
+	font-size:      90%;
+}
+
+p{
+	color:	    	#FFFACD;
+        margin-left:    10px;
+}
+
+p.center{
+	text-align:	center;
+}
+
+a:link    {color:	#FF0000}  /* unvisited link */
+a:visited {color:	#FFFF22}  /* visited link */
+a:hover   {color:	#FF00FF}  /* mouse over link */
+a:active  {color:	#0000FF}  /* selected link */
+    
+h1{
+	text-align: 	center;
+}
+
+h1, h2, h3, h4{
+	color:	    	#FFFACD;
+    	font-style:     oblique;
+}
+
+h2.center{
+	text-align: 	center;
+}
+
+h4{
+	color:		#B0E0E6;
+}
+
+em.white{
+	font-style:	normal; 
+	color:		#ffffff; 
+}
+
+em.yellow{
+	font-style:	normal; 
+	color:		#fff000; 
+}
+
+em.red{
+	font-style:	normal; 
+	color:		#ff0000;
+}
+
+
+em.blue{
+    font-style: normal; 
+    color:      #0000FF;
+}
+
+em.lime{
+    font-style: normal; 
+    color:      #00FF00;
+}
+
+.uline{
+	text-decoration:underline;      /* under line class */
+	text-align: 	center;
+}
+
+.emshift{				/* use for no border table to the entry to stand out */
+	border: 	0;
+	border-collapse:separate;
+	border-spacing: 8px;
+	margin-left:	80px; 
+	font-size:	105%; 
+	color:		#B0E0E6;
+}
+
+
+/* MONTHLY REPORT RELATED FORMATTING */
+#navigation{
+	position: 	absolute;
+	top: 		15em;
+	left: 		10px;
+	width: 		154px;
+	font-size: 	85%;
+	font-weight: 	bold;
+	text-align: 	left;
+	color:		blue;
+	background-color: #B0E0E6;
+	border-width: 	10px; 
+	border-color: 	white;
+	padding: 	3px;
+}
+
+#main_area{
+	position: 	relative; 
+	top: 		37em; 
+	left: 		5px;
+	padding-left:	10px;
+	padding-right:	20px;
+}	
+
+ul.short{
+	margin-left: 	0; 
+	padding-left: 	12px;
+	list-style-type: lower-roman;
+	width:		80%;
+	padding-right:	36px;
+}
+
+
+ul.medium{
+	margin-left: 	0; 
+	width:		95%;
+	padding-left: 	36px;
+	padding-right:	36px;
+}
+
+hr.long{
+	height:		  6px; 
+	color:		 #B0E0E6; 
+	background-color:#B0E0E6;
+}
+
+hr.short{
+	height:		  4px; 
+	color:		 #B0E0E6; 
+	background-color:#B0E0E6;
+	width:		 80%;
+}
+

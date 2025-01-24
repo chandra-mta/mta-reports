@@ -16,6 +16,7 @@ from kadi.events import rad_zones
 from datetime import datetime
 import argparse
 import getpass
+import json
 #
 # --- extracting formatted data sets, compute statistics, then plot for each data category
 #
@@ -168,6 +169,22 @@ def supplemental_files(event_data, pathing_dict):
     with open(ifile, "w") as file:
         file.write(string)
 
+    #
+    # --- Write to total list of all shutdowns
+    #
+    with open(f"{pathing_dict['DATA_DIR']}/all_shutdowns.json") as f:
+        all_shutdowns = json.load(f)
+    formatted_event = {
+        'name': event_data['name'],
+        'tstart': event_data['tstart'].strftime("%Y:%m:%d:%H:%M:%S"),
+        'tstop': event_data['tstop'].strftime("%Y:%m:%d:%H:%M:%S"),
+        'tlost': event_data['tlost'],
+        'mode': event_data['mode']
+    }
+    all_shutdowns[event_data['name']] = formatted_event
+    with open(f"{pathing_dict['DATA_DIR']}/all_shutdowns.json",'w') as f:
+        json.dump(all_shutdowns,f, indent = 4)
+
 # -------------------------------------------------------------------------------------
 # -- run_interrupt: run all sci run plot routines                                    --
 # -------------------------------------------------------------------------------------
@@ -182,7 +199,7 @@ def run_interrupt(event_data, pathing_dict):
 
     """
     print(f"Generating: {event_data['name']}")
-    #supplemental_files(event_data, pathing_dict)
+    supplemental_files(event_data, pathing_dict)
     #hrc.hrc_data_set(event_data, pathing_dict)
     #goes.goes_data_set(event_data, pathing_dict)
     #ace.ace_data_set(event_data, pathing_dict)

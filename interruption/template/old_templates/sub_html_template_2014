@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>#header_title#</title>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<!-- #### CSS STYLE SHEET FILE #### -->
+<link rel="stylesheet" type="text/css" href='../interrupt.css' />
+<style  type='text/css'>
+table{text-align:center;margin-left:auto;margin-right:auto;border-style:solid;border-spacing:8px;border-width:2px;border-collapse:separate}
+</style>
+</head>
+
+<body>
+
+<div style='float:right'>
+<a href='../rad_interrupt.html'>Back to Main Page</a>
+</div>
+
+
+<h2 style='text-align:center;margin-left:auto;margin-right:auto'>
+#main_title# Science Run Interruption
+</h2>
+
+<table style='border-width:0px'>
+<tr>
+<td> Science Run Stop:</td>  
+<td style='text-align:right'>#sci_run_stop#</td>
+</tr>
+<tr>
+<td>Science Run Start:</td>
+<td style='text-align:right'>#sci_run_start#</td>
+</tr>
+<tr>
+<td>Interruption:</td>
+<td style='text-align:right'>#interruption#ks</td>
+</tr>
+<tr>
+<td>Triggered by:</td>
+<td style='text-align:right'>#trigger#</td>
+</tr>
+</table>
+
+<p style='padding-bottom:20px;padding-top:20px'>
+<a href='../Note_dir/#note_name#' style='font-weight:bold'>Note about this event.</a>
+</p>
+
+
+<p>
+Go to:
+</p>
+<p style='padding-left:50px'>
+<a href='#ACE' style='font-weight:bold'>ACE Plot</a> (E38/E175, P47/P112/P310/P761/P1060)
+</p>
+<p style='padding-left:50px'>
+<a href='#HRC' style='font-weight:bold'>HRC Plot</a> (HRC Shield Rate)
+</p>
+<p style='padding-left:50px'>
+<a href='#GOES' style='font-weight:bold'>GOES-15 Plot</a> (P1/P2/P5)
+</p>
+
+
+
+<h3>ACE Radiation Data</h3>
+<p>
+<a href='../Data_dir/#ace_data#' target='_blank' style='font-weight:bold'>ACE Data Table</a>.
+</p>
+<p>
+ACE radiation data are plotted around periods when science runs were interrupted. 
+Plots start exactly 2 days before the interruption started. The top panel shows 
+differential fluxes of electrons 38-53 and 175-315 (particles/cm2-s-ster-MeV), 
+the middle panel shows differential fluxes of protons 47-65, 112-187, and 310-580 
+(particles/cm2-s-ster-MeV).
+</p>
+
+<pre style='font-size:90%'>
+
+#ace_table#
+
+</pre>
+
+<p style='padding-bottom:30px'>
+Two vertical red lines indicate the start and the end of the interruption.
+Purple hatched areas indicate that the satellite is in the radiation belt.
+The horizontal dashed line indicates P3 trigger level. If P3 level is higher than this
+level more than 2 hours, SCS 107 may be manually triggered.
+</p>
+
+<p style='padding-bottom:30px'>
+<a id='ACE'>
+<img src = "../Main_plot/#ace_plot#" alt='ace plot'  style='width:100%'>
+</a>
+</p>
+
+
+<h3> HRC Data</h3>
+<p>
+<a href='../Data_dir/#eph_data#' target='_blank' style='font-weight:bold'>HRC Data Table</a>.
+</p>
+
+
+<pre style='font-size:90%'>
+
+#eph_table#
+
+</pre>
+
+<p style='padding-bottom:30px'>
+Two vertical red lines indicate the start and the end of the interruption.
+Purple hatched areas indicate that the satellite is in the radiation belt.
+The red horizontal dashedline indicates  SCS 107 limits. If the HRC shield rate/256 goes above 248, automatic SCS 107 is triggered.
+</p>
+
+<p style='padding-bottom:30px;padding-bottom:20px'>
+<a id='HRC'>
+<img src = "../Ephin_plot/#eph_plot#"  alt='eph plot' style='width:100%'>
+</a>
+</p>
+
+
+<h3> ACIS Data</h3>
+<p style='padding-bottom:20px'>
+The follwoing plots are copied from <a href='http://acis.mit.edu/asc/txgif/'>ACIS Threshold Corssings Page</a>.
+For more details, please refer to <a href='ftp://acis.mit.edu/pub/acis-patch-txings-13.pdf' target=blank>Using ACIS to detect and report high radiation conditions</a>
+</p>
+
+<div style='text-align:center'>
+
+#acis_plot#
+
+</div>
+
+
+
+<h3>GOES-15 Data</h3>
+<p>
+<a href='../Data_dir/#goes_data#' target='_blank' style='font-weight:bold'>GOES Data Table</a>.
+</p>
+<p>
+GOES-11 data are taken from NOAA site (http://goes.ngdc.noaa.gov). 
+</p>
+
+<table  style='border-width:0px'>
+<tr><td>P1</td><td style='text-align:right'> .8 -   4.0</td><td> MeV protons (Counts/cm2 sec sr MeV) Uncorrected</td></tr>
+<tr><td>P2</td><td style='text-align:right'>4.0 -   9.0</td><td> MeV protons (Counts/cm2 sec sr MeV) Uncorrected</td></tr>
+<tr><td>P5</td><td style='text-align:right'>40.0 -  80.0</td><td>MeV protons (Counts/cm2 sec sr MeV) Uncorrected</td></tr>
+</table>
+
+<pre style='font-size:90%;padding-bottom:20px'>
+
+#goes_table#
+
+</pre>
+
+
+
+<p style='padding-bottom:30px'>
+Two vertical red lines indicate the start and the end of the interruption.
+Purple hatched areas indicate that the satellite is in the radiation belt.
+The red horizontal dashed lines indicate  SCS 107 limits. If GOES P2 or P5 
+levels go above these levels, SCS 107 may be manually triggered.  
+</p>
+
+
+<p style='padding-bottom:30px'>
+<a id='GOES'>
+<img src = "../GOES_plot/#goes_plot#" alt='GOES plot' style='width:100%'>
+</a>
+</p>
+
+
+<!--
+<h3>XMM Data</h3>
+<p>
+<a href='../Data_dir/#xmm_data#' target='_blank' style='font-weight:bold'>XMM Data Table</a>.
+</p>
+<p>
+
+<pre style='font-size:90%;padding-bottom:20px'>
+#xmm_table#
+
+</pre>   
+
+
+<p style='padding-bottom:30px'>
+Two vertical red lines indicate the start and the end of the interruption.
+Red  hatched areas indicate that the satellite is in the radiation belt.
+</p>     
+
+<p style='padding-bottom:30px'>
+<a name='XMM'>
+<img src = "../XMM_plot/#xmm_plot#" alt='XMM plot'  style='width:100%'>
+</a>     
+</p>     
+-->
+
+
+<a href='../rad_interrupt.html'>Back to Main Page</a>
+
+
+</body>
+</html>
