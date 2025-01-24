@@ -14,9 +14,10 @@ from kadi.events import rad_zones
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from cxotime import CxoTime
+from Ska.Matplotlib import plot_cxctime
 import shutil
 from astropy.io import ascii
-from astropy.table import vstack, Column, unique
+from astropy.table import Column, unique
 import subprocess
 
 #
@@ -64,12 +65,40 @@ _XMM_CHANNEL_SELECT = [
     "HES-2",
     "HES-C",
 ]  #: Selection of XMM table channels for the human-reference text file
+
 _subhead = "\t\t".join(_XMM_CHANNEL_SELECT)
 _XMM_DATA_HEADER = (
     f"Science Run Interruption: #LSTART\n\nTime\t\t{_subhead}\n{'-'*100}\n"
 )
 _XMM_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Start of Interruption\n{'-'*95}\n"
 
+#
+# --- Plotting Globals
+#
+_LOW_ENERGY_CHANNEL_SELECT = [
+    "LE-0",
+    "LE-1",
+    "LE-2",
+] #: Selection of XMM table channels for the low energy plot
+_HIGH_ENERGY_CHANNEL_SELECT = [
+    "HES-0",
+    "HES-1",
+    "HES-2",
+    "HES-C",
+] #: Selection of XMM table channels for the high energy plot
+
+_LOW_ENERGY_PLOT_KWARGS = [
+    {'color':'red'},
+    {'color':'blue'},
+    {'color':'green'},
+]
+
+_HIGH_ENERGY_PLOT_KWARGS = [
+    {'color':'red'},
+    {'color':'blue'},
+    {'color':'green'},
+    {'color':'aqua'},
+]
 
 def xmm_data_set(event_data, pathing_dict):
     """Intakes data from the Space Weather XMM data archive in ``SPACE_WEATHER_DIR`` into an ``astropy.table`` and uses data for plotting and statistics.
@@ -118,6 +147,18 @@ def fetch_XMM_data(time_start, time_stop, pathing_dict):
     
 
 def write_xmm_files(xmm_table, event_data, pathing_dict):
+    """Write XMM data and statistics to human-reference text file.
+
+    :param xmm_table: XMM data table read from :func:`~interruption.xmm_data_set.fetch_xmm_data`.
+    :type xmm_table: astropy.table.Table
+    :param event_data: A dictionary which stores interruption data.
+    :type event_data: dict(str, cxotime or float or str)
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+    :File Out: Writes the ``<event_name>_xmm.txt`` data table to the two ``OUT_WEB_DIR/Data_dir`` directories,
+        and writes the ``<event_name>_xmm_stat`` statistics table to the two ``OUT_WEB_DIR/Stat_dir`` directories.
+    
+    """
     #
     # --- Write Data File
     #
@@ -181,7 +222,125 @@ def write_xmm_files(xmm_table, event_data, pathing_dict):
         shutil.copy(ifile, ifile2)
 
 def plot_xmm_data(xmm_table, event_data, pathing_dict):
-    pass
+    """Create a plot of XMM channel data.
+
+    :param xmm_table: XMM data table read from :func:`~interruption.xmm_data_set.fetch_xmm_data`.
+    :type xmm_table: astropy.table.Table
+    :param event_data: A dictionary which stores interruption data.
+    :type event_data: dict(str, cxotime or float or str)
+    :param pathing_dict: A dictionary of file paths for storing file input and output.
+    :type pathing_dict: dict(str, str)
+    :File Out: Writes the ``<event_name>_xmm.png`` plots to the two ``OUT_WEB_DIR/XMM_plot`` directories.
+
+    """
+    zones = rad_zones.filter(
+        start=event_data["tstart"] - timedelta(days=2),
+        stop=event_data["tstop"] + timedelta(days=2),
+    ).table
+    fig = plt.figure(figsize=(10, 6.7))
+    fig.clf()
+
+    times = xmm_table["cxotime"]
+    #
+    # --- Reference Information
+    #
+    date_format = mdates.DateFormatter("%j")
+    deltatime = event_data["tstop"].datetime - event_data["tstart"].datetime
+    ymin = 0.05
+    ymax = 50000
+    int_label = 60000
+    plt.subplots_adjust(hspace=0.25)
+    #
+    # --- Low Energy (LE) proton and electron unit
+    #
+    ax1 = fig.add_subplot(2, 1, 1)
+    ax1.xaxis.set_major_formatter(date_format)
+    ax1.set_ylim(ymin, ymax, auto=False)
+    ax1.set_ylabel(f"counts/sec", fontsize=10)
+    ax1.set_yscale('log')
+    ax1.grid()
+    for label in ax1.get_xticklabels():
+                label.set_visible(False)
+    for i, channel in enumerate(_LOW_ENERGY_CHANNEL_SELECT):
+        plot_cxctime(times, xmm_table[channel].data, lw = 1, **_LOW_ENERGY_PLOT_KWARGS[i])
+    #
+    #--- Legend
+    #
+    leg1 = plt.legend(_LOW_ENERGY_CHANNEL_SELECT, loc='upper left', fontsize=8)
+    leg1.get_frame().set_alpha(0.5)
+    #
+    # --- Plot Indicator Lines
+    #
+    plt.axvline(event_data["tstart"].datetime, color="red", lw=2)  #: Event Start
+    plt.axvline(event_data["tstop"].datetime, color="red", lw=2)  #: Event Ending
+    #
+    # --- Plot Labels
+    #
+    plt.text(
+        event_data["tstart"].datetime + (0.025 * deltatime),
+        int_label,
+        r"Interruption",
+        color="red",
+    )  #: Interruption Marker
+    #
+    # --- Plot of radiation zones
+    #
+    for row in zones:
+        start = datetime.strptime(str(row["start"]).split(".")[0], "%Y:%j:%H:%M:%S")
+        stop = datetime.strptime(str(row["stop"]).split(".")[0], "%Y:%j:%H:%M:%S")
+        plt.plot(
+            [start, stop], [ymin, ymin], color="purple", lw=8
+        )  #: Radiation Zone
+    #
+    # --- High Energy (HE) particle unit
+    #
+    ax2 = fig.add_subplot(2, 1, 2, sharex=ax1)
+    ax2.xaxis.set_major_formatter(date_format)
+    ax2.set_xlabel("Day of Year", fontsize=9)
+    ax2.set_ylim(ymin, ymax, auto=False)
+    ax2.set_ylabel(f"counts/sec", fontsize=9)
+    ax2.set_yscale('log')
+    ax2.grid()
+    for i, channel in enumerate(_HIGH_ENERGY_CHANNEL_SELECT):
+        plot_cxctime(times, xmm_table[channel].data, lw = 1, **_HIGH_ENERGY_PLOT_KWARGS[i])
+    #
+    #--- Legend
+    #
+    leg2 = plt.legend(_HIGH_ENERGY_CHANNEL_SELECT, loc='upper left', fontsize=8)
+    leg2.get_frame().set_alpha(0.5)
+    #
+    # --- Plot Indicator Lines
+    #
+    plt.axvline(event_data["tstart"].datetime, color="red", lw=2)  #: Event Start
+    plt.axvline(event_data["tstop"].datetime, color="red", lw=2)  #: Event Ending
+    #
+    # --- Plot Labels
+    #
+    plt.text(
+        event_data["tstart"].datetime + (0.025 * deltatime),
+        int_label,
+        r"Interruption",
+        color="red",
+    )  #: Interruption Marker
+    #
+    # --- Plot of radiation zones
+    #
+    for row in zones:
+        start = datetime.strptime(str(row["start"]).split(".")[0], "%Y:%j:%H:%M:%S")
+        stop = datetime.strptime(str(row["stop"]).split(".")[0], "%Y:%j:%H:%M:%S")
+        plt.plot(
+            [start, stop], [ymin, ymin], color="purple", lw=8
+        )  #: Radiation Zone
+    ofile = os.path.join(
+        pathing_dict["OUT_WEB_DIR"], "XMM_plot", f"{event_data['name']}_xmm.png"
+    )
+    ofile2 = os.path.join(
+        pathing_dict["OUT_WEB_DIR2"], "XMM_plot", f"{event_data['name']}_xmm.png"
+    )
+    os.makedirs(os.path.dirname(ofile), exist_ok=True)
+    os.makedirs(os.path.dirname(ofile2), exist_ok=True)
+    plt.savefig(ofile, format="png", dpi=300)
+    plt.savefig(ofile2, format="png", dpi=300)
 
 #
 # --- Internal functions to assist cleanly formatting the input GOES table

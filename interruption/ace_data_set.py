@@ -171,14 +171,12 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
 def write_ace_files(ace_table, event_data, pathing_dict):
     """Write ACE data and statistics to human-reference text file.
 
-    :param goes_table: ACE data table read from :func:`~interruption.ace_data_set.fetch_ace_data`.
+    :param ace_table: ACE data table read from :func:`~interruption.ace_data_set.fetch_ace_data`.
     :type ace_table: astropy.table.Table
     :param event_data: A dictionary which stores interruption data.
     :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
     :type pathing_dict: dict(str, str)
-    :raises ValueError: If the starting or stopping time line of data cannot be found in the data archive.
-    :raises FileNotFoundError: If the data archive file cannot be found.
     :File Out: Writes the ``<event_name>_ace.txt`` data table to the two ``OUT_WEB_DIR/Data_dir`` directories,
         and writes the ``<event_name>_ace_stat`` statistics table to the two ``OUT_WEB_DIR/Stat_dir`` directories.
 
@@ -250,8 +248,8 @@ def write_ace_files(ace_table, event_data, pathing_dict):
 def plot_ace_data(ace_table, event_data, pathing_dict):
     """Create a plot of ACE channel data.
 
-    :param goes_table: ACE data table read from :func:`~interruption.ace_data_set.fetch_ace_data`.
-    :type goes_table: astropy.table.Table
+    :param ace_table: ACE data table read from :func:`~interruption.ace_data_set.fetch_ace_data`.
+    :type ace_table: astropy.table.Table
     :param event_data: A dictionary which stores interruption data.
     :type event_data: dict(str, cxotime or float or str)
     :param pathing_dict: A dictionary of file paths for storing file input and output.
@@ -275,15 +273,15 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
     deltatime = event_data["tstop"].datetime - event_data["tstart"].datetime
     ymin = 1
     ymax = 6
-    int_label = 5
-    plt.subplots_adjust(hspace=0.08)
+    int_label = 6.2
+    plt.subplots_adjust(hspace=0.25)
     #
     # --- Electron set
     #
     ax1 = fig.add_subplot(2, 1, 1)
     ax1.xaxis.set_major_formatter(date_format)
     ax1.set_ylim(ymin, ymax, auto=False)
-    ax1.set_ylabel(f"{ylab}(Electron/cm2-q-sr-KeV) Rate)", fontsize=9)
+    ax1.set_ylabel(f"{ylab}(#e/cm2-q-sr-KeV) Rate)", fontsize=9)
     ax1.grid()
     
     for label in ax1.get_xticklabels():
@@ -299,13 +297,13 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
     #
     #--- Legend
     #
-    leg1 = plt.legend([x.capitalize() for x in _ELECTRON_CHANNEL_SELECT])
+    leg1 = plt.legend([x.capitalize() for x in _ELECTRON_CHANNEL_SELECT], loc='upper left', fontsize=8)
     leg1.get_frame().set_alpha(0.5)
     #
     # --- Plot Indicator Lines
     #
-    plt.axvline(event_data["tstart"].datetime, color="red", lw=2)  # Event Start
-    plt.axvline(event_data["tstop"].datetime, color="red", lw=2)  # Event Ending
+    plt.axvline(event_data["tstart"].datetime, color="red", lw=2)  #: Event Start
+    plt.axvline(event_data["tstop"].datetime, color="red", lw=2)  #: Event Ending
     #
     # --- Plot Labels
     #
@@ -315,7 +313,7 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
         int_label,
         r"Interruption",
         color="red",
-    )  # Interruption Marker
+    )  #: Interruption Marker
     #
     # --- Plot of radiation zones
     #
@@ -324,7 +322,7 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
         stop = datetime.strptime(str(row["stop"]).split(".")[0], "%Y:%j:%H:%M:%S")
         plt.plot(
             [start, stop], [ymin, ymin], color="purple", lw=8
-        )  # Radiation Zone
+        )  #: Radiation Zone
     
     #
     # --- Proton set
@@ -333,7 +331,7 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
     ax2.xaxis.set_major_formatter(date_format)
     ax2.set_xlabel("Day of Year", fontsize=9)
     ax2.set_ylim(ymin, ymax, auto=False)
-    ax2.set_ylabel(f"{ylab}(Proton/cm2-q-sr-KeV) Rate)", fontsize=9)
+    ax2.set_ylabel(f"{ylab}(#p/cm2-q-sr-KeV) Rate)", fontsize=9)
     ax2.grid()
     for i, channel in enumerate(_PROTON_CHANNEL_SELECT):
         #
@@ -346,23 +344,22 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
     #
     #--- Legend
     #
-    leg2 = plt.legend([x.capitalize() for x in _PROTON_CHANNEL_SELECT])
+    leg2 = plt.legend([x.capitalize() for x in _PROTON_CHANNEL_SELECT], loc='upper left', fontsize=8)
     leg2.get_frame().set_alpha(0.5)
     #
     # --- Plot Indicator Lines
     #
-    plt.axvline(event_data["tstart"].datetime, color="red", lw=2)  # Event Start
-    plt.axvline(event_data["tstop"].datetime, color="red", lw=2)  # Event Ending
+    plt.axvline(event_data["tstart"].datetime, color="red", lw=2)  #: Event Start
+    plt.axvline(event_data["tstop"].datetime, color="red", lw=2)  #: Event Ending
     #
     # --- Plot Labels
     #
-    
     plt.text(
         event_data["tstart"].datetime + (0.025 * deltatime),
         int_label,
         r"Interruption",
         color="red",
-    )  # Interruption Marker
+    )  #: Interruption Marker
     #
     # --- Plot of radiation zones
     #
@@ -371,7 +368,7 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
         stop = datetime.strptime(str(row["stop"]).split(".")[0], "%Y:%j:%H:%M:%S")
         plt.plot(
             [start, stop], [ymin, ymin], color="purple", lw=8
-        )  # Radiation Zone
+        )  #: Radiation Zone
     ofile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "ACE_plot", f"{event_data['name']}_ace.png"
     )
