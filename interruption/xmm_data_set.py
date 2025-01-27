@@ -1,9 +1,9 @@
 #!/proj/sot/ska3/flight/bin/python
 """
-**ace_data_set.py** Extract ACE data, compute statistics, and plot values.
+**xmm_data_set.py** Extract XMM data, compute statistics, and plot values.
 
 :Author: W. Aaron (william.aaron@cfa.harvard.edu)
-:Last Updated: Dec 17, 2024
+:Last Updated: Jan 25, 2025
 :Note: This script is designed to be a submodule of **run_interruption.py**
 
 """
@@ -233,6 +233,7 @@ def plot_xmm_data(xmm_table, event_data, pathing_dict):
     :File Out: Writes the ``<event_name>_xmm.png`` plots to the two ``OUT_WEB_DIR/XMM_plot`` directories.
 
     """
+    plt.close('all')
     zones = rad_zones.filter(
         start=event_data["tstart"] - timedelta(days=2),
         stop=event_data["tstop"] + timedelta(days=2),

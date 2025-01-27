@@ -255,6 +255,7 @@ def plot_goes_data(goes_table, event_data, pathing_dict):
     :File Out: Writes the ``<event_name>_goes.png`` plots to the two ``OUT_WEB_DIR/GOES_plot`` directories.
 
     """
+    plt.close('all')
     zones = rad_zones.filter(
         start=event_data["tstart"] - timedelta(days=_FETCH_INTERVAL),
         stop=event_data["tstop"] + timedelta(days=_FETCH_INTERVAL),

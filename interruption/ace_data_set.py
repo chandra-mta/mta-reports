@@ -257,6 +257,7 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
     :File Out: Writes the ``<event_name>_ace.png`` plots to the two ``OUT_WEB_DIR/ACE_plot`` directories.
 
     """
+    plt.close('all')
     zones = rad_zones.filter(
         start=event_data["tstart"] - timedelta(days=2),
         stop=event_data["tstop"] + timedelta(days=2),

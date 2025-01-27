@@ -24,6 +24,7 @@ import hrc_data_set as hrc
 import goes_data_set as goes
 import ace_data_set as ace
 import xmm_data_set as xmm
+import generate_science_report as gsr
 #
 # --- Define Directory Pathing
 #
@@ -200,15 +201,17 @@ def run_interrupt(event_data, pathing_dict):
     """
     print(f"Generating: {event_data['name']}")
     supplemental_files(event_data, pathing_dict)
-    #hrc.hrc_data_set(event_data, pathing_dict)
-    #goes.goes_data_set(event_data, pathing_dict)
-    #ace.ace_data_set(event_data, pathing_dict)
+    #
+    # --- Generate instrument / satellite data sets.
+    #
+    ace.ace_data_set(event_data, pathing_dict)
+    hrc.hrc_data_set(event_data, pathing_dict)
+    goes.goes_data_set(event_data, pathing_dict)
     xmm.xmm_data_set(event_data, pathing_dict)
     #
-    # ---- create individual html page and main html page
+    # ---- Create individual html page and main html page.
     #
-    print("HTML UPDATE")
-    # srphtml.print_each_html_control(event_data, pathing_dict)
+    gsr.generate_science_report(event_data, pathing_dict)
 
 
 # -------------------------------------------------------------------------------------
