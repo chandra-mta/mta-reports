@@ -205,7 +205,7 @@ def run_interrupt(event_data, pathing_dict):
     #
     # --- Generate instrument / satellite data sets.
     #
-    ace.ace_data_set(event_data, pathing_dict)
+    #ace.ace_data_set(event_data, pathing_dict)
     #hrc.hrc_data_set(event_data, pathing_dict)
     #goes.goes_data_set(event_data, pathing_dict)
     #xmm.xmm_data_set(event_data, pathing_dict)

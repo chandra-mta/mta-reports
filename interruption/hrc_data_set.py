@@ -214,3 +214,16 @@ def plot_hrc_data(fetch_result, event_data, pathing_dict):
     os.makedirs(os.path.dirname(ofile2), exist_ok=True)
     plt.savefig(ofile, format="png", dpi=300)
     plt.savefig(ofile2, format="png", dpi=300)
+    #
+    # --- Also save plot to an Intro_plot web directory for the main shutdowns pages
+    #
+    ofile = os.path.join(
+        pathing_dict["OUT_WEB_DIR"], "Intro_plot", f"{event_data['name']}_intro.png"
+    )
+    ofile2 = os.path.join(
+        pathing_dict["OUT_WEB_DIR2"], "Intro_plot", f"{event_data['name']}_intro.png"
+    )
+    os.makedirs(os.path.dirname(ofile), exist_ok=True)
+    os.makedirs(os.path.dirname(ofile2), exist_ok=True)
+    plt.savefig(ofile, format="png", dpi=300)
+    plt.savefig(ofile2, format="png", dpi=300)

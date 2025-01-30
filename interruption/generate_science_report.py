@@ -10,18 +10,20 @@
 import os
 import shutil
 import re
-from datetime import timedelta
+from datetime import timedelta, datetime
 import requests
 import json
+from jinja2 import Environment, FileSystemLoader
 
 _ACIS_GIF_SOURCE = "http://acisweb.mit.edu/asc/txgif/gifs/"
 
-_TIME_HEADER = '<a href="time_order.html" style="font-weight:bold;font-size:120%">\nTime Ordered List</a>\n</td><td>\n'
-_AUTO_HEADER = '<a href="auto_shut.html" style="font-weight:bold;font-size:120%">\nAuto Shutdown List</em>\n</td><td>\n'
-_MANUAL_HEADER = '<a href="manual_shut.html" style="font-weight:bold;font-size:120%">\nManually Shutdown List</a>\n</td><td>\n'
-_HARDNESS_HEADER = '<a href="hardness_order.html" style="font-weight:bold;font-size:120%">\nHardness Ordered List</a>\n</td><td>\n'
-_DESELECT_HEADER = '<em class="lime" style="font-weight:bold;font-size:120%">\n#TYPE#</em>\n</td><td>\n'
+_PAGE_NAMES = {'time': 'time_order',
+               'auto': 'auto_shut',
+               'manual': 'manual_shut',
+               'hardness': 'hardness_order'}
 
+_JINJA_ENV = Environment(loader = FileSystemLoader('template', followlinks = True))
+_UPDATE_DATE = datetime.now().strftime("%Y-%m-%d")
 
 def generate_science_report(event_data, pathing_dict):
     """Generate the science report web pages.
@@ -35,51 +37,40 @@ def generate_science_report(event_data, pathing_dict):
     generate_event_report(event_data, pathing_dict)
     generate_shutdown_pages(event_data, pathing_dict)
 
-
 def generate_event_report(event_data, pathing_dict):
     #
     # --- Read in template file and replace tags with shutdown data
     #
     print("Generating Event HTML")
     name = event_data["name"]
-    with open(f"{pathing_dict['BIN_DIR']}/template/event_html_template") as f:
-        event_template = f.read()
-    event_template = re.sub("#header_title#", name, event_template)
-    event_template = re.sub("#main_title#", name, event_template)
-    event_template = re.sub(
-        "#tstart#", event_data["tstart"].strftime("%Y:%m:%d:%H:%M:%S"), event_template
-    )
-    event_template = re.sub(
-        "#tstop#", event_data["tstop"].strftime("%Y:%m:%d:%H:%M:%S"), event_template
-    )
-    event_template = re.sub("#tlost#", event_data["tlost"], event_template)
-    event_template = re.sub("#mode#", event_data["mode"], event_template)
-    event_template = re.sub("#note_name#", f"{name}.txt", event_template)
     #
-    # --- ACE data set
+    # --- Read in Stat files for tables
     #
-    stat_file = os.path.join(
+    ace_stat_file = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{name}_ace_stat"
     )
-    event_template = re.sub("#ace_data#", f"{name}_ace.txt", event_template)
-    with open(stat_file) as f:
-        stat_table = f.read()
-    event_template = re.sub("#ace_table#", stat_table, event_template)
-    event_template = re.sub("#ace_plot#", f"{name}_ace.png", event_template)
-    #
-    # --- HRC data set
-    #
-    stat_file = os.path.join(
+    with open(ace_stat_file) as f:
+        ace_table = f.read()
+
+    hrc_stat_file = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{name}_hrc_stat"
     )
-    event_template = re.sub("#hrc_data#", f"{name}_hrc.txt", event_template)
-    with open(stat_file) as f:
-        stat_table = f.read()
-    event_template = re.sub("#hrc_table#", stat_table, event_template)
-    event_template = re.sub("#hrc_plot#", f"{name}_hrc.png", event_template)
+    with open(hrc_stat_file) as f:
+        hrc_table = f.read()
+    
+    goes_stat_file = os.path.join(
+        pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{name}_goes_stat"
+    )
+    with open(goes_stat_file) as f:
+        goes_table = f.read()
+    
+    xmm_file = os.path.join(
+        pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{name}_xmm_stat"
+    )
+    with open(xmm_file) as f:
+        xmm_table = f.read()
     #
-    # --- ACIS data set
-    # --- Format to include plot only if the .gif file from MIT exists
+    # --- Embed Link to existing MIT ACIS plots.
     #
     date_to_fetch = event_data["tstart"].datetime
     date_to_stop = event_data["tstop"].datetime
@@ -90,34 +81,21 @@ def generate_event_report(event_data, pathing_dict):
         if r.status_code == 200:
             acis_plot_links.append(url)
         date_to_fetch += timedelta(days=1)
-    aline = ""
+    acis_plot = ""
     for i, url in enumerate(acis_plot_links):
-        aline += f"<img src='{url}'style='width:45%; padding-bottom:30px;'>\n"
+        acis_plot += f"<img src='{url}'style='width:45%; padding-bottom:30px;'>\n"
         if i % 2 == 1:
-            aline += "<br/>\n"
-    event_template = re.sub("#acis_plot#", aline, event_template)
+            acis_plot += "<br/>\n"
     #
-    # --- GOES data set
+    # --- Pull and Render Jinja Template
     #
-    stat_file = os.path.join(
-        pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{name}_goes_stat"
-    )
-    event_template = re.sub("#goes_data#", f"{name}_goes.txt", event_template)
-    with open(stat_file) as f:
-        stat_table = f.read()
-    event_template = re.sub("#goes_table#", stat_table, event_template)
-    event_template = re.sub("#goes_plot#", f"{name}_goes.png", event_template)
-    #
-    # --- XMM data set
-    #
-    stat_file = os.path.join(
-        pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{name}_xmm_stat"
-    )
-    event_template = re.sub("#xmm_data#", f"{name}_xmm.txt", event_template)
-    with open(stat_file) as f:
-        stat_table = f.read()
-    event_template = re.sub("#xmm_table#", stat_table, event_template)
-    event_template = re.sub("#xmm_plot#", f"{name}_xmm.png", event_template)
+    event_template = _JINJA_ENV.get_template('event_template.jinja')
+    render = event_template.render(event_data = event_data,
+                                   acis_plot = acis_plot,
+                                   ace_table = ace_table,
+                                   hrc_table = hrc_table,
+                                   goes_table = goes_table,
+                                   xmm_table = xmm_table)
     #
     # --- Write template contents to a html file
     #
@@ -126,66 +104,36 @@ def generate_event_report(event_data, pathing_dict):
     os.makedirs(os.path.dirname(html_file), exist_ok=True)
     os.makedirs(os.path.dirname(html_file2), exist_ok=True)
     with open(html_file, "w") as f:
-        f.write(event_template)
+        f.write(render)
     if html_file != html_file2:
         shutil.copy(html_file, html_file2)
 
-
 def generate_shutdown_pages(event_data, pathing_dict):
-    time, auto, manual, hardness = _create_ordered_list(pathing_dict)
-    template_header_file = os.path.join(
-        pathing_dict["BIN_DIR"], "template", "main_header_template"
-    )
-    with open(template_header_file) as f:
-        header_template = f.read()
-    #
-    # --- Create the four pages as strings
-    # --- with _<type>_HEADERS to select other pages
-    #
-    time_page = (
-        header_template
-        + _DESELECT_HEADER.replace("#TYPE#", "Time Ordered List")
-        + _AUTO_HEADER
-        + _MANUAL_HEADER
-        + _HARDNESS_HEADER
-        + "</table>\n<ul>\n"
-    )
-    auto_page = (
-        header_template
-        + _TIME_HEADER
-        + _DESELECT_HEADER.replace("#TYPE#", "Auto Shutdown List")
-        + _MANUAL_HEADER
-        + _HARDNESS_HEADER
-        + "</table>\n<ul>\n"
-    )
-    manual_page = (
-        header_template
-        + _TIME_HEADER
-        + _AUTO_HEADER
-        + _DESELECT_HEADER.replace("#TYPE#", "Manually Shutdown List")
-        + _HARDNESS_HEADER
-        + "</table>\n<ul>\n"
-    )
-    hardness_page = (
-        header_template
-        + _TIME_HEADER
-        + _AUTO_HEADER
-        + _MANUAL_HEADER
-        + _DESELECT_HEADER.replace("#TYPE", "Hardness Ordered List")
-        + "</table>\n<ul>\n"
-    )
-    #
-    # --- Iterate over ordered lists of events to fill our entries for each page
-    #
 
+    with open(f"{pathing_dict['DATA_DIR']}/all_shutdowns.json") as f:
+        all_shutdowns = json.load(f)
+    ordered_lists = _create_ordered_list(all_shutdowns, pathing_dict)
+    main_template = _JINJA_ENV.get_template('main_template.jinja')
+    #main_template.globals.update(_create_event_panel = _create_event_panel)
+    
+    for type, sel in ordered_lists.items():
+        render = main_template.render(type = type,
+                                      sel = sel,
+                                      all_shutdowns = all_shutdowns,
+                                      _UPDATE_DATE = _UPDATE_DATE)
+        html_file = os.path.join(pathing_dict["OUT_WEB_DIR"], f"{_PAGE_NAMES[type]}.html")
+        html_file2 = os.path.join(pathing_dict["OUT_WEB_DIR2"], f"{_PAGE_NAMES[type]}.html")
+        os.makedirs(os.path.dirname(html_file), exist_ok=True)
+        os.makedirs(os.path.dirname(html_file2), exist_ok=True)
+        with open(html_file, "w") as f:
+            f.write(render)
+        if html_file != html_file2:
+            shutil.copy(html_file, html_file2)
 
-
-def _create_ordered_list(pathing_dict):
+def _create_ordered_list(all_shutdowns, pathing_dict):
     #
     # --- Read in list of all shutdowns to adjust order.
     #
-    with open(f"{pathing_dict['DATA_DIR']}/all_shutdowns.json") as f:
-        all_shutdowns = json.load(f)
     time_ordered = list(all_shutdowns.keys())
     time_ordered.sort(reverse=True)
     #
@@ -218,4 +166,10 @@ def _create_ordered_list(pathing_dict):
     for event in temp:
         hardness_ordered.append(event[1])
 
-    return time_ordered, auto_ordered, manual_ordered, hardness_ordered
+    return {'time': time_ordered,
+     'auto': auto_ordered,
+     'manual': manual_ordered,
+     'hardness': hardness_ordered}
+
+def _create_event_panel():
+    return f"</p>{os.getcwd()}</p>"

@@ -1,0 +1,111 @@
+{% macro create_panel(event_data)%}
+{% set year = event_data['name'][:4] | int%}
+<li style="text-align:left;font-weight:bold;padding-bottom:20px">
+    <table style="border-width:0px"><tr>
+        <td>Science Run Stop: </td>
+        <td>{{ event_data['tstart'] }}</td>
+        <td> Start: </td>
+        <td>{{ event_data['tstop'] }}</td>
+        <td> Interruption: </td>
+        <td>{{ event_data['tlost'] }} ks</td>
+        <td> {{ event_data['mode'] }}</td>
+    </tr></table>
+    <a href="./Html_dir/{{ event_data['name'] }}.html"><img src="./Intro_plot/{{ event_data['name'] }}_intro.png" alt="intro plot" style="width:100%;height:20%"></a>
+    <a href="">ACE RTSW EPAM Data</a> - 
+    {% if year < 2014 %}
+        <a href="">Ephin Data</a> - 
+    {% else %}
+        <a href="">HRC Data</a> - 
+    {% endif%}
+    <a href="">GOES Data</a> - 
+    <a href="">XMM</a> - 
+    <a href="./Note_dir/{{ event_data['name'] }}.txt">Note</a> - 
+    <a href="./Html_dir/{{ event_data['name'] }}.html">Plots</a> - 
+    <br />
+    <div style="padding-bottom:10px"></div>
+    </li>
+{% endmacro %}
+
+<!DOCTYPE html>
+<html>
+<head>
+<title> Radiation Count Rate Plots for Periods Which Interrupted Science Runs </title>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<!-- #### CSS STYLE SHEET FILE #### -->
+<link rel="stylesheet" type="text/css" href="https://cxc.cfa.harvard.edu/mta/REPORTS/Template/mta_monthly.css" />
+<style  type='text/css'>
+table{text-align:center;margin-left:auto;margin-right:auto;border-style:solid;border-spacing:8px;border-width:2px;border-collapse:separate}
+</style>
+</head>
+
+<body>
+<h2>
+Radiation Count Rate Plots for Periods Which Interrupted Science Runs
+</h2>
+<p style="text-align:rightfont-weight:bold">
+Last Updated:  {{ _UPDATE_DATE }}
+</p>
+
+<p style="font-weight:boldpadding-left:4empadding-right:6em">
+The following plots are:
+<ul>
+<li>HRC Shield rate : after Year 2014</li>
+<li>E150 electron count rate (electron Counts/cm2 sed sr eV ) between Year 2006 and Year 2014</li>
+<li>P41 proton count rate  (15.0 -  40.0 MeV protons Counts/cm2 sec sr MeV) before Year 2006</li>
+</ul>
+around science runs were interrupted.  Plots start two days before the interruption
+started, and end 5 days after.  If the interruption period is longer than 5 days, the plots are
+extended accordingly. By click one of the plots, you can open the page displaying more information
+about that event. 
+</p>
+
+<p style="font-weight:boldpadding-left:4empadding-right:6em">
+If a plot is noted with "auto", the science run was automatically interrupted because the high radiation
+tripped one of the criteria. If it is noted with "manual", it was done by an operator's judgement.
+</p>
+
+<p style="font-weight:boldpadding-left:4empadding-right:6em">
+Note: Data points in 2000 Data are one hour average. All others are 5 min average.
+Plots after 2011 are siginficatlly different. Montoring of P4 and P41 were discontinued after
+year 2006 and replaced by e150 and e1500. After year 2014, they are again replaced by HRC shield rate.
+</p>
+<p style="font-weight:boldpadding-left:4empadding-right:6em">
+GOES data sources changed from GOES 11 to GOES 15 at year 2000, and to GOES R after year 2020.
+</p>
+
+<hr/>
+<table style="border-width:0px"><tbody>
+<tr><td>
+    {% if type == 'time' %}
+        <em class="lime" style="font-weight:bold;font-size:120%">Time Ordered List</em>
+    {% else %}
+        <a href="time_order.html" style="font-weight:bold;font-size:120%">Time Ordered List</a>
+    {% endif %}
+    </td><td>
+    {% if type == 'auto' %}
+        <em class="lime" style="font-weight:bold;font-size:120%">Auto Shutdown List</em>
+    {% else %}
+    <a href="auto_shut.html" style="font-weight:bold;font-size:120%">Auto Shutdown List</em>
+    {% endif %}
+    </td><td>
+    {% if type == 'manual' %}
+        <em class="lime" style="font-weight:bold;font-size:120%">Manually Shutdown List</em>
+    {% else %}
+    <a href="manual_shut.html" style="font-weight:bold;font-size:120%">Manually Shutdown List</a>
+    {% endif %}
+    </td><td>
+    {% if type == 'hardness' %}
+        <em class="lime" style="font-weight:bold;font-size:120%">Hardness Ordered List</em>
+    {% else %}
+    <a href="hardness_order.html" style="font-weight:bold;font-size:120%">Hardness Ordered List</a>
+    {% endif %}
+    </td>
+</tr></tbody></table>
+<ul></ul>
+{% for event_name in sel %}
+    {{ create_panel(event_data = all_shutdowns[event_name]) }}
+{% endfor %}
+
+
+</body>
+</html>
