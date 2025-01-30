@@ -55,15 +55,15 @@ _INPUT_ACE_COLUMNS = [
     "hhmm",
     "mjd",
     "daysecs",
-    "electron_status",
-    "electron38-53",
-    "electron175-315",
-    "proton_status",
-    "proton47-68",
-    "proton115-195",
-    "proton310-580",
-    "proton795-1193",
-    "proton1060-1900",
+    "e_status",
+    "e38-53",
+    "e175-315",
+    "p_status",
+    "p47-68",
+    "p115-195",
+    "p310-580",
+    "p795-1193",
+    "p1060-1900",
     "aniso",
 ]
 
@@ -71,13 +71,13 @@ _INPUT_ACE_COLUMNS = [
 # --- File heading information
 #
 _ACE_CHANNEL_SELECT = [
-    "electron38-53",
-    "electron175-315",
-    "proton47-68",
-    "proton115-195",
-    "proton310-580",
-    "proton795-1193",
-    "proton1060-1900",
+    "e38-53",
+    "e175-315",
+    "p47-68",
+    "p115-195",
+    "p310-580",
+    "p795-1193",
+    "p1060-1900",
     "aniso",
 ]  #: Selection of ACE table channels for the human-reference text file
 _subhead = "\t\t".join(_ACE_CHANNEL_SELECT)
@@ -90,15 +90,15 @@ _ACE_STAT_HEADER = f"\t\tAvg\t\t\tMax\t\tTime\t\tMin\t\tTime\t\tValue at Start o
 # --- Plotting Globals
 #
 _ELECTRON_CHANNEL_SELECT = [
-    "electron38-53",
-    "electron175-315",
+    "e38-53",
+    "e175-315",
 ]
 _PROTON_CHANNEL_SELECT = [
-    "proton47-68",
-    "proton115-195",
-    "proton310-580",
-    "proton795-1193",
-    "proton1060-1900",
+    "p47-68",
+    "p115-195",
+    "p310-580",
+    "p795-1193",
+    "p1060-1900",
 ]
 _ELECTRON_PLOT_KWARGS = [
     {'color':'red'},
@@ -188,7 +188,7 @@ def write_ace_files(ace_table, event_data, pathing_dict):
         "#LSTART", event_data["tstart"].strftime("%Y:%m:%d:%H:%M")
     )
     for row in ace_table:
-        substring = f"{str(row['cxotime']).split('.')[0]}\t\t"
+        substring = f"{str(row['cxotime'].date).split('.')[0]}\t\t"
         for channel in _ACE_CHANNEL_SELECT:
             if channel == _ACE_CHANNEL_SELECT[-1]:
                 substring += f"{row[channel]}"
@@ -215,6 +215,9 @@ def write_ace_files(ace_table, event_data, pathing_dict):
     sel = ace_table["cxotime"] == _round_down(event_data["tstart"])
     interrupt_row = ace_table[sel][0]
     line = _ACE_STAT_HEADER
+    #
+    # --- Channel Stats
+    #
     for channel in _ACE_CHANNEL_SELECT[:-1]:
         avg = np.mean(ace_table[channel].data)
         std = np.std(ace_table[channel].data)
@@ -225,12 +228,67 @@ def write_ace_files(ace_table, event_data, pathing_dict):
 
         sel = ace_table[channel].data >= 0
         minidx = np.argmin(ace_table[channel].data[sel])
-        min = ace_table[channel][minidx]
-        mintime = ace_table["cxotime"][minidx].strftime(_ACE_DATA_TIME_FORMAT)
+        min = ace_table[channel][sel][minidx]
+        mintime = ace_table["cxotime"][sel][minidx].strftime(_ACE_DATA_TIME_FORMAT)
 
         val_intt = interrupt_row[channel]
 
         line += f"{channel}\t\t{avg:.3e}+/-{std:.3e}\t{max:.3e}\t{maxtime}\t{min:.3e}\t{mintime}\t{val_intt}\n"
+    #
+    # --- Ratio Stats
+    # --- define ratios by picking the largest / last selected proton and electron channels
+    #
+    e_chan = _ELECTRON_CHANNEL_SELECT[-1]
+    p_chan = _PROTON_CHANNEL_SELECT[-1]
+    for channel in _ELECTRON_CHANNEL_SELECT[:-1]:
+        #
+        # --- Compute ratio, but map inf values to nan values due to division by zero
+        # --- Then run numpy functions to ignore nan values
+        #
+        with np.errstate(divide='ignore'):
+            data_set = ace_table[channel].data / ace_table[e_chan].data
+            data_set = np.where(np.isinf(data_set), np.nan, data_set)
+
+            avg = np.nanmean(data_set)
+            std = np.nanstd(data_set)
+
+            maxidx = np.nanargmax(data_set)
+            max = data_set[maxidx]
+            maxtime = ace_table["cxotime"][maxidx].strftime(_ACE_DATA_TIME_FORMAT)
+
+            sel = data_set >= 0
+            minidx = np.nanargmin(data_set[sel])
+            min = data_set[sel][minidx]
+            mintime = ace_table["cxotime"][sel][minidx].strftime(_ACE_DATA_TIME_FORMAT)
+
+            val_intt = interrupt_row[channel] / interrupt_row[e_chan]
+
+            line += f"{channel}/{e_chan}\t\t{avg:.3e}+/-{std:.3e}\t{max:.3e}\t{maxtime}\t{min:.3e}\t{mintime}\t{val_intt}\n"
+
+    for channel in _PROTON_CHANNEL_SELECT[:-1]:
+        #
+        # --- Compute ratio, but map inf values to nan values due to division by zero
+        # --- Then run numpy functions to ignore nan values
+        #
+        with np.errstate(divide='ignore'):
+            data_set = ace_table[channel].data / ace_table[e_chan].data
+            data_set = np.where(np.isinf(data_set), np.nan, data_set)
+
+            avg = np.nanmean(data_set)
+            std = np.nanstd(data_set)
+
+            maxidx = np.nanargmax(data_set)
+            max = data_set[maxidx]
+            maxtime = ace_table["cxotime"][maxidx].strftime(_ACE_DATA_TIME_FORMAT)
+
+            sel = data_set >= 0
+            minidx = np.nanargmin(data_set[sel])
+            min = data_set[sel][minidx]
+            mintime = ace_table["cxotime"][sel][minidx].strftime(_ACE_DATA_TIME_FORMAT)
+
+            val_intt = interrupt_row[channel] / interrupt_row[p_chan]
+
+            line += f"{channel}/{p_chan}\t\t{avg:.3e}+/-{std:.3e}\t{max:.3e}\t{maxtime}\t{min:.3e}\t{mintime}\t{val_intt}\n"
 
     ifile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{event_data['name']}_ace_stat"
