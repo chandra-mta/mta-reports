@@ -12,8 +12,16 @@ import shutil
 import re
 from datetime import timedelta
 import requests
+import json
 
 _ACIS_GIF_SOURCE = "http://acisweb.mit.edu/asc/txgif/gifs/"
+
+_TIME_HEADER = '<a href="time_order.html" style="font-weight:bold;font-size:120%">\nTime Ordered List</a>\n</td><td>\n'
+_AUTO_HEADER = '<a href="auto_shut.html" style="font-weight:bold;font-size:120%">\nAuto Shutdown List</em>\n</td><td>\n'
+_MANUAL_HEADER = '<a href="manual_shut.html" style="font-weight:bold;font-size:120%">\nManually Shutdown List</a>\n</td><td>\n'
+_HARDNESS_HEADER = '<a href="hardness_order.html" style="font-weight:bold;font-size:120%">\nHardness Ordered List</a>\n</td><td>\n'
+_DESELECT_HEADER = '<em class="lime" style="font-weight:bold;font-size:120%">\n#TYPE#</em>\n</td><td>\n'
+
 
 def generate_science_report(event_data, pathing_dict):
     """Generate the science report web pages.
@@ -25,7 +33,7 @@ def generate_science_report(event_data, pathing_dict):
 
     """
     generate_event_report(event_data, pathing_dict)
-    generate_top_shutdown_pages(event_data, pathing_dict)
+    generate_shutdown_pages(event_data, pathing_dict)
 
 
 def generate_event_report(event_data, pathing_dict):
@@ -73,8 +81,8 @@ def generate_event_report(event_data, pathing_dict):
     # --- ACIS data set
     # --- Format to include plot only if the .gif file from MIT exists
     #
-    date_to_fetch = event_data['tstart'].datetime
-    date_to_stop = event_data['tstop'].datetime
+    date_to_fetch = event_data["tstart"].datetime
+    date_to_stop = event_data["tstop"].datetime
     acis_plot_links = []
     while (date_to_stop - date_to_fetch).days >= -1:
         url = f"{_ACIS_GIF_SOURCE}{date_to_fetch.strftime('%Y-%j')}.gif"
@@ -82,7 +90,7 @@ def generate_event_report(event_data, pathing_dict):
         if r.status_code == 200:
             acis_plot_links.append(url)
         date_to_fetch += timedelta(days=1)
-    aline = ''
+    aline = ""
     for i, url in enumerate(acis_plot_links):
         aline += f"<img src='{url}'style='width:45%; padding-bottom:30px;'>\n"
         if i % 2 == 1:
@@ -123,5 +131,91 @@ def generate_event_report(event_data, pathing_dict):
         shutil.copy(html_file, html_file2)
 
 
-def generate_top_shutdown_pages(event_data, pathing_dict):
-    pass
+def generate_shutdown_pages(event_data, pathing_dict):
+    time, auto, manual, hardness = _create_ordered_list(pathing_dict)
+    template_header_file = os.path.join(
+        pathing_dict["BIN_DIR"], "template", "main_header_template"
+    )
+    with open(template_header_file) as f:
+        header_template = f.read()
+    #
+    # --- Create the four pages as strings
+    # --- with _<type>_HEADERS to select other pages
+    #
+    time_page = (
+        header_template
+        + _DESELECT_HEADER.replace("#TYPE#", "Time Ordered List")
+        + _AUTO_HEADER
+        + _MANUAL_HEADER
+        + _HARDNESS_HEADER
+        + "</table>\n<ul>\n"
+    )
+    auto_page = (
+        header_template
+        + _TIME_HEADER
+        + _DESELECT_HEADER.replace("#TYPE#", "Auto Shutdown List")
+        + _MANUAL_HEADER
+        + _HARDNESS_HEADER
+        + "</table>\n<ul>\n"
+    )
+    manual_page = (
+        header_template
+        + _TIME_HEADER
+        + _AUTO_HEADER
+        + _DESELECT_HEADER.replace("#TYPE#", "Manually Shutdown List")
+        + _HARDNESS_HEADER
+        + "</table>\n<ul>\n"
+    )
+    hardness_page = (
+        header_template
+        + _TIME_HEADER
+        + _AUTO_HEADER
+        + _MANUAL_HEADER
+        + _DESELECT_HEADER.replace("#TYPE", "Hardness Ordered List")
+        + "</table>\n<ul>\n"
+    )
+    #
+    # --- Iterate over ordered lists of events to fill our entries for each page
+    #
+
+
+
+def _create_ordered_list(pathing_dict):
+    #
+    # --- Read in list of all shutdowns to adjust order.
+    #
+    with open(f"{pathing_dict['DATA_DIR']}/all_shutdowns.json") as f:
+        all_shutdowns = json.load(f)
+    time_ordered = list(all_shutdowns.keys())
+    time_ordered.sort(reverse=True)
+    #
+    # --- Iterate over events to splint into other ordered lists
+    #
+    auto_ordered = []
+    manual_ordered = []
+    for event in time_ordered:
+        if all_shutdowns[event]["mode"] == "auto":
+            auto_ordered.append(event)
+        if all_shutdowns[event]["mode"] == "manual":
+            manual_ordered.append(event)
+
+    hardness = []
+    for event in time_ordered:
+        stat_file = os.path.join(
+            pathing_dict["OUT_WEB_DIR2"], "Stat_dir", f"{event}_ace_stat"
+        )
+        if not os.path.exists(stat_file):
+            raise Exception(f"{stat_file} not generated.")
+        with open(stat_file) as f:
+            stat_data = [line.strip() for line in f.readlines()]
+        for line in stat_data:
+            if "p47/p1060" in line or "p47-68/p1060-1900" in line:
+                data = re.split("\s+|\t+", line)
+                hardness.append(float(data[2]))
+    temp = zip(hardness, time_ordered)
+    temp = sorted(temp, reverse=True)
+    hardness_ordered = []
+    for event in temp:
+        hardness_ordered.append(event[1])
+
+    return time_ordered, auto_ordered, manual_ordered, hardness_ordered

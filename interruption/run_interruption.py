@@ -8,6 +8,7 @@
 
 """
 
+import shutil
 import sys
 import os
 import numpy as np
@@ -205,9 +206,9 @@ def run_interrupt(event_data, pathing_dict):
     # --- Generate instrument / satellite data sets.
     #
     ace.ace_data_set(event_data, pathing_dict)
-    hrc.hrc_data_set(event_data, pathing_dict)
-    goes.goes_data_set(event_data, pathing_dict)
-    xmm.xmm_data_set(event_data, pathing_dict)
+    #hrc.hrc_data_set(event_data, pathing_dict)
+    #goes.goes_data_set(event_data, pathing_dict)
+    #xmm.xmm_data_set(event_data, pathing_dict)
     #
     # ---- Create individual html page and main html page.
     #
@@ -263,8 +264,10 @@ if __name__ == "__main__":
         #
         # --- Change default pathing for test run
         #
+        os.makedirs(f"{os.getcwd()}/test/_outTest", exist_ok=True)
+        shutil.copy(f"{os.getcwd()}/template/interrupt.css", f"{os.getcwd()}/test/_outTest")
+        shutil.copy(f"{DATA_DIR}/all_shutdowns.json", f"{os.getcwd()}/test/_outTest")
         BIN_DIR = f"{os.getcwd()}"
-        os.makedirs(f"{BIN_DIR}/test/_outTest", exist_ok=True)
         pathing_dict = {
             "BIN_DIR": BIN_DIR,
             "DATA_DIR": f"{BIN_DIR}/test/_outTest",

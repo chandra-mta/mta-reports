@@ -13,7 +13,7 @@ table{text-align:center;margin-left:auto;margin-right:auto;border-style:solid;bo
 <body>
 
 <div style='float:right'>
-<a href='../rad_interrupt.html'>Back to Main Page</a>
+<a href='../time_order.html'>Back to Time Ordered Page</a>
 </div>
 
 <h2 style='text-align:center;margin-left:auto;margin-right:auto'>
@@ -31,7 +31,7 @@ table{text-align:center;margin-left:auto;margin-right:auto;border-style:solid;bo
 </tr>
 <tr>
 <td>Interruption:</td>
-<td style='text-align:right'>#tlost#ks</td>
+<td style='text-align:right'>#tlost# ks</td>
 </tr>
 <tr>
 <td>Triggered by:</td>
@@ -117,7 +117,7 @@ The red horizontal dashed line indicates  SCS 107 limits. If the HRC shield rate
 <h3> ACIS Data</h3>
 <p style='padding-bottom:20px'>
 The following plots are copied from the <a href='http://acis.mit.edu/asc/txgif/'>ACIS Threshold Crossings Page</a>.
-For more details, please refer to <a href='ftp://acis.mit.edu/pub/acis-patch-txings-13.pdf' target=blank>Using ACIS to detect and report high radiation conditions</a>
+For more details, please refer to <a href='ftp://acis.mit.edu/pub/acis-patch-txings-13.pdf' target=blank>. Using ACIS to detect and report high radiation conditions</a>
 All available plots for each day of the shutdown are listed. If a day is missing, then there is no plot available.
 </p>
 
