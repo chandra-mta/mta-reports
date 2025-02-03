@@ -16,10 +16,11 @@ from cxotime import CxoTime
 from kadi.events import rad_zones
 from datetime import datetime
 import argparse
+import platform
 import getpass
 import json
 #
-# --- extracting formatted data sets, compute statistics, then plot for each data category
+# --- Extracting formatted data sets, compute statistics, then plot for each data category
 #
 import hrc_data_set as hrc
 import goes_data_set as goes
@@ -34,8 +35,6 @@ DATA_DIR = "/data/mta/Script/Interrupt/Data"
 OUT_DATA_DIR = "/data/mta/Script/Interrupt/Data"
 WEB_DIR = "/data/mta_www/mta_interrupt"
 OUT_WEB_DIR = "/data/mta_www/mta_interrupt"
-WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
-OUT_WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
 SPACE_WEATHER_DIR = "/data/mta4/Space_Weather"
 INTERRUPT_DIR = "/data/mta/Script/Interrupt"
 
@@ -45,8 +44,6 @@ _PATHING_DICT = {
     "OUT_DATA_DIR": OUT_DATA_DIR,
     "WEB_DIR": WEB_DIR,
     "OUT_WEB_DIR": OUT_WEB_DIR,
-    "WEB_DIR2": WEB_DIR2,
-    "OUT_WEB_DIR2": OUT_WEB_DIR2,
     "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
     "INTERRUPT_DIR": INTERRUPT_DIR,
 }  #: Dictionary of input and output file paths for collecting all interruption data.
@@ -205,10 +202,10 @@ def run_interrupt(event_data, pathing_dict):
     #
     # --- Generate instrument / satellite data sets.
     #
-    #ace.ace_data_set(event_data, pathing_dict)
-    #hrc.hrc_data_set(event_data, pathing_dict)
-    #goes.goes_data_set(event_data, pathing_dict)
-    #xmm.xmm_data_set(event_data, pathing_dict)
+    ace.ace_data_set(event_data, pathing_dict)
+    hrc.hrc_data_set(event_data, pathing_dict)
+    goes.goes_data_set(event_data, pathing_dict)
+    xmm.xmm_data_set(event_data, pathing_dict)
     #
     # ---- Create individual html page and main html page.
     #
@@ -274,8 +271,6 @@ if __name__ == "__main__":
             "OUT_DATA_DIR": f"{BIN_DIR}/test/_outTest",
             "WEB_DIR": f"{BIN_DIR}/test/_outTest",
             "OUT_WEB_DIR": f"{BIN_DIR}/test/_outTest",
-            "WEB_DIR2": f"{BIN_DIR}/test/_outTest",
-            "OUT_WEB_DIR2": f"{BIN_DIR}/test/_outTest",
             "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
             "INTERRUPT_DIR": INTERRUPT_DIR,
         }

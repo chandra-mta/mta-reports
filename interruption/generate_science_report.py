@@ -100,13 +100,9 @@ def generate_event_report(event_data, pathing_dict):
     # --- Write template contents to a html file
     #
     html_file = os.path.join(pathing_dict["OUT_WEB_DIR"], "Html_dir", f"{name}.html")
-    html_file2 = os.path.join(pathing_dict["OUT_WEB_DIR2"], "Html_dir", f"{name}.html")
     os.makedirs(os.path.dirname(html_file), exist_ok=True)
-    os.makedirs(os.path.dirname(html_file2), exist_ok=True)
     with open(html_file, "w") as f:
         f.write(render)
-    if html_file != html_file2:
-        shutil.copy(html_file, html_file2)
 
 def generate_shutdown_pages(event_data, pathing_dict):
 
@@ -114,21 +110,17 @@ def generate_shutdown_pages(event_data, pathing_dict):
         all_shutdowns = json.load(f)
     ordered_lists = _create_ordered_list(all_shutdowns, pathing_dict)
     main_template = _JINJA_ENV.get_template('main_template.jinja')
-    #main_template.globals.update(_create_event_panel = _create_event_panel)
     
     for type, sel in ordered_lists.items():
         render = main_template.render(type = type,
                                       sel = sel,
                                       all_shutdowns = all_shutdowns,
+                                      pathing_dict = pathing_dict,
                                       _UPDATE_DATE = _UPDATE_DATE)
         html_file = os.path.join(pathing_dict["OUT_WEB_DIR"], f"{_PAGE_NAMES[type]}.html")
-        html_file2 = os.path.join(pathing_dict["OUT_WEB_DIR2"], f"{_PAGE_NAMES[type]}.html")
         os.makedirs(os.path.dirname(html_file), exist_ok=True)
-        os.makedirs(os.path.dirname(html_file2), exist_ok=True)
         with open(html_file, "w") as f:
             f.write(render)
-        if html_file != html_file2:
-            shutil.copy(html_file, html_file2)
 
 def _create_ordered_list(all_shutdowns, pathing_dict):
     #
@@ -150,7 +142,7 @@ def _create_ordered_list(all_shutdowns, pathing_dict):
     hardness = []
     for event in time_ordered:
         stat_file = os.path.join(
-            pathing_dict["OUT_WEB_DIR2"], "Stat_dir", f"{event}_ace_stat"
+            pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{event}_ace_stat"
         )
         if not os.path.exists(stat_file):
             raise Exception(f"{stat_file} not generated.")
@@ -170,6 +162,3 @@ def _create_ordered_list(all_shutdowns, pathing_dict):
      'auto': auto_ordered,
      'manual': manual_ordered,
      'hardness': hardness_ordered}
-
-def _create_event_panel():
-    return f"</p>{os.getcwd()}</p>"

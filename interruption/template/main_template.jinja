@@ -1,4 +1,4 @@
-{% macro create_panel(event_data)%}
+{% macro create_panel(event_data, pathing_dict)%}
 {% set year = event_data['name'][:4] | int%}
 <li style="text-align:left;font-weight:bold;padding-bottom:20px">
     <table style="border-width:0px"><tr>
@@ -11,17 +11,26 @@
         <td> {{ event_data['mode'] }}</td>
     </tr></table>
     <a href="./Html_dir/{{ event_data['name'] }}.html"><img src="./Intro_plot/{{ event_data['name'] }}_intro.png" alt="intro plot" style="width:100%;height:20%"></a>
-    <a href="">ACE RTSW EPAM Data</a> - 
-    {% if year < 2014 %}
-        <a href="">Ephin Data</a> - 
+    <!-- Due to changes in desired data sets for each shutdown, change setup of links by year-->
+    {% if year > 2024 %}
+        <a href="./Data_dir/{{ event_data['name'] }}_ace.txt">ACE RTSW EPAM Data</a> - 
     {% else %}
-        <a href="">HRC Data</a> - 
+        <a href="./Data_dir/{{ event_data['name'] }}_dat.txt">ACE RTSW EPAM Data</a> - 
+    {% endif %}
+    {% if year < 2014 %}
+        <a href="./Data_dir/{{ event_data['name'] }}_eph.txt">Ephin Data</a> - 
+    {% elif year > 2024 %}
+        <a href="./Data_dir/{{ event_data['name'] }}_hrc.txt">HRC Data</a> - 
+    {% else %}
+        <a href="./Data_dir/{{ event_data['name'] }}_eph.txt">HRC Data</a> -
     {% endif%}
-    <a href="">GOES Data</a> - 
-    <a href="">XMM</a> - 
+    <a href="./Data_dir/{{ event_data['name'] }}_goes.txt">GOES Data</a> - 
+    {% if year > 2016 %}
+        <a href="./Data_dir/{{ event_data['name'] }}_xmm.txt">XMM</a> - 
+    {% endif%}
     <a href="./Note_dir/{{ event_data['name'] }}.txt">Note</a> - 
-    <a href="./Html_dir/{{ event_data['name'] }}.html">Plots</a> - 
-    <br />
+    <a href="./Html_dir/{{ event_data['name'] }}.html">Plots</a>
+    <br/>
     <div style="padding-bottom:10px"></div>
     </li>
 {% endmacro %}
@@ -66,11 +75,14 @@ tripped one of the criteria. If it is noted with "manual", it was done by an ope
 
 <p style="font-weight:boldpadding-left:4empadding-right:6em">
 Note: Data points in 2000 Data are one hour average. All others are 5 min average.
-Plots after 2011 are siginficatlly different. Montoring of P4 and P41 were discontinued after
+Plots after 2011 are significantly different. Monitoring of P4 and P41 were discontinued after
 year 2006 and replaced by e150 and e1500. After year 2014, they are again replaced by HRC shield rate.
 </p>
 <p style="font-weight:boldpadding-left:4empadding-right:6em">
-GOES data sources changed from GOES 11 to GOES 15 at year 2000, and to GOES R after year 2020.
+GOES data sources changed from GOES 11 to GOES 15 at year 2000, and to GOES-R after year 2020.
+</p>
+<p style="font-weight:boldpadding-left:4empadding-right:6em">
+Starting on 2025, the GOES data set now records the GOES-R channels P4, P5, and P6 as these channels constitute the new HRC shield rate proxy calculation.
 </p>
 
 <hr/>
@@ -103,7 +115,7 @@ GOES data sources changed from GOES 11 to GOES 15 at year 2000, and to GOES R af
 </tr></tbody></table>
 <ul></ul>
 {% for event_name in sel %}
-    {{ create_panel(event_data = all_shutdowns[event_name]) }}
+    {{ create_panel(event_data = all_shutdowns[event_name], pathing_dict = pathing_dict) }}
 {% endfor %}
 
 

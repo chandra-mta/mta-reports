@@ -25,15 +25,11 @@ import subprocess
 #
 WEB_DIR = "/data/mta_www/mta_interrupt"
 OUT_WEB_DIR = "/data/mta_www/mta_interrupt"
-WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
-OUT_WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
 SPACE_WEATHER_DIR = "/data/mta4/Space_Weather"
 
 _PATHING_DICT = {
     "WEB_DIR": WEB_DIR,
     "OUT_WEB_DIR": OUT_WEB_DIR,
-    "WEB_DIR2": WEB_DIR2,
-    "OUT_WEB_DIR2": OUT_WEB_DIR2,
     "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
 }  #: Dictionary of input and output file paths for collecting XMM interruption data.
 _FETCH_INTERVAL = 2 #: Number of days before and after interruption period to fetch trending data from.
@@ -176,15 +172,9 @@ def write_xmm_files(xmm_table, event_data, pathing_dict):
     ifile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Data_dir", f"{event_data['name']}_xmm.txt"
     )
-    ifile2 = os.path.join(
-        pathing_dict["OUT_WEB_DIR2"], "Data_dir", f"{event_data['name']}_xmm.txt"
-    )
     os.makedirs(os.path.dirname(ifile), exist_ok=True)
-    os.makedirs(os.path.dirname(ifile2), exist_ok=True)
     with open(ifile, "w") as f:
         f.write(line)
-    if ifile != ifile2:
-        shutil.copy(ifile, ifile2)
     #
     # --- Write Stat File.
     #
@@ -211,15 +201,9 @@ def write_xmm_files(xmm_table, event_data, pathing_dict):
     ifile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{event_data['name']}_xmm_stat"
     )
-    ifile2 = os.path.join(
-        pathing_dict["OUT_WEB_DIR2"], "Stat_dir", f"{event_data['name']}_xmm_stat"
-    )
     os.makedirs(os.path.dirname(ifile), exist_ok=True)
-    os.makedirs(os.path.dirname(ifile2), exist_ok=True)
     with open(ifile, "w") as f:
         f.write(line)
-    if ifile != ifile2:
-        shutil.copy(ifile, ifile2)
 
 def plot_xmm_data(xmm_table, event_data, pathing_dict):
     """Create a plot of XMM channel data.
@@ -335,13 +319,8 @@ def plot_xmm_data(xmm_table, event_data, pathing_dict):
     ofile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "XMM_plot", f"{event_data['name']}_xmm.png"
     )
-    ofile2 = os.path.join(
-        pathing_dict["OUT_WEB_DIR2"], "XMM_plot", f"{event_data['name']}_xmm.png"
-    )
     os.makedirs(os.path.dirname(ofile), exist_ok=True)
-    os.makedirs(os.path.dirname(ofile2), exist_ok=True)
     plt.savefig(ofile, format="png", dpi=300)
-    plt.savefig(ofile2, format="png", dpi=300)
 
 #
 # --- Internal functions to assist cleanly formatting the input GOES table

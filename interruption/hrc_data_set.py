@@ -24,14 +24,10 @@ import shutil
 #
 WEB_DIR = "/data/mta_www/mta_interrupt"
 OUT_WEB_DIR = "/data/mta_www/mta_interrupt"
-WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
-OUT_WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
 
 _PATHING_DICT = {
     "WEB_DIR": WEB_DIR,
     "OUT_WEB_DIR": OUT_WEB_DIR,
-    "WEB_DIR2": WEB_DIR2,
-    "OUT_WEB_DIR2": OUT_WEB_DIR2,
 }  #: Dictionary of input and output file paths for collecting HRC interruption data.
 _FETCH_INTERVAL = 2 #: Number of days before and after interruption period to fetch trending data from.
 _MSIDS = [
@@ -112,15 +108,9 @@ def write_hrc_files(fetch_result, event_data, pathing_dict):
     ifile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Data_dir", f"{event_data['name']}_hrc.txt"
     )
-    ifile2 = os.path.join(
-        pathing_dict["OUT_WEB_DIR2"], "Data_dir", f"{event_data['name']}_hrc.txt"
-    )
     os.makedirs(os.path.dirname(ifile), exist_ok=True)
-    os.makedirs(os.path.dirname(ifile2), exist_ok=True)
     with open(ifile, "w") as f:
         f.write(line)
-    if ifile != ifile2:
-        shutil.copy(ifile, ifile2)
 
     #
     # --- Write Stat File.
@@ -148,16 +138,9 @@ def write_hrc_files(fetch_result, event_data, pathing_dict):
     ifile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{event_data['name']}_hrc_stat"
     )
-    ifile2 = os.path.join(
-        pathing_dict["OUT_WEB_DIR2"], "Stat_dir", f"{event_data['name']}_hrc_stat"
-    )
     os.makedirs(os.path.dirname(ifile), exist_ok=True)
-    os.makedirs(os.path.dirname(ifile2), exist_ok=True)
     with open(ifile, "w") as f:
         f.write(line)
-    if ifile != ifile2:
-        shutil.copy(ifile, ifile2)
-
 
 def plot_hrc_data(fetch_result, event_data, pathing_dict):
     """Create a plot of HRC shield data.
@@ -207,23 +190,13 @@ def plot_hrc_data(fetch_result, event_data, pathing_dict):
     ofile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "HRC_plot", f"{event_data['name']}_hrc.png"
     )
-    ofile2 = os.path.join(
-        pathing_dict["OUT_WEB_DIR2"], "HRC_plot", f"{event_data['name']}_hrc.png"
-    )
     os.makedirs(os.path.dirname(ofile), exist_ok=True)
-    os.makedirs(os.path.dirname(ofile2), exist_ok=True)
     plt.savefig(ofile, format="png", dpi=300)
-    plt.savefig(ofile2, format="png", dpi=300)
     #
     # --- Also save plot to an Intro_plot web directory for the main shutdowns pages
     #
     ofile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Intro_plot", f"{event_data['name']}_intro.png"
     )
-    ofile2 = os.path.join(
-        pathing_dict["OUT_WEB_DIR2"], "Intro_plot", f"{event_data['name']}_intro.png"
-    )
     os.makedirs(os.path.dirname(ofile), exist_ok=True)
-    os.makedirs(os.path.dirname(ofile2), exist_ok=True)
     plt.savefig(ofile, format="png", dpi=300)
-    plt.savefig(ofile2, format="png", dpi=300)

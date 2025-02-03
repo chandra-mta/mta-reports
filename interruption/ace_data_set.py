@@ -28,15 +28,11 @@ import subprocess
 #
 WEB_DIR = "/data/mta_www/mta_interrupt"
 OUT_WEB_DIR = "/data/mta_www/mta_interrupt"
-WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
-OUT_WEB_DIR2 = "/data/mta4/www/RADIATION_new/mta_interrupt"
 INTERRUPT_DIR = "/data/mta/Script/Interrupt"
 
 PATHING_DICT = {
     "WEB_DIR": WEB_DIR,
     "OUT_WEB_DIR": OUT_WEB_DIR,
-    "WEB_DIR2": WEB_DIR2,
-    "OUT_WEB_DIR2": OUT_WEB_DIR2,
     "INTERRUPT_DIR": INTERRUPT_DIR,
 }
 _FETCH_INTERVAL = 2 #: Number of days before and after interruption period to fetch trending data from.
@@ -199,15 +195,9 @@ def write_ace_files(ace_table, event_data, pathing_dict):
     ifile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Data_dir", f"{event_data['name']}_ace.txt"
     )
-    ifile2 = os.path.join(
-        pathing_dict["OUT_WEB_DIR2"], "Data_dir", f"{event_data['name']}_ace.txt"
-    )
     os.makedirs(os.path.dirname(ifile), exist_ok=True)
-    os.makedirs(os.path.dirname(ifile2), exist_ok=True)
     with open(ifile, "w") as f:
         f.write(line)
-    if ifile != ifile2:
-        shutil.copy(ifile, ifile2)
 
     #
     # --- Write Stat File.
@@ -293,15 +283,9 @@ def write_ace_files(ace_table, event_data, pathing_dict):
     ifile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "Stat_dir", f"{event_data['name']}_ace_stat"
     )
-    ifile2 = os.path.join(
-        pathing_dict["OUT_WEB_DIR2"], "Stat_dir", f"{event_data['name']}_ace_stat"
-    )
     os.makedirs(os.path.dirname(ifile), exist_ok=True)
-    os.makedirs(os.path.dirname(ifile2), exist_ok=True)
     with open(ifile, "w") as f:
         f.write(line)
-    if ifile != ifile2:
-        shutil.copy(ifile, ifile2)
 
 def plot_ace_data(ace_table, event_data, pathing_dict):
     """Create a plot of ACE channel data.
@@ -410,6 +394,7 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
     #
     plt.axvline(event_data["tstart"].datetime, color="red", lw=2)  #: Event Start
     plt.axvline(event_data["tstop"].datetime, color="red", lw=2)  #: Event Ending
+    plt.axhline(np.log10(3.6e8), color = 'black', ls='--') #: ACE P3 alert limit
     #
     # --- Plot Labels
     #
@@ -431,13 +416,8 @@ def plot_ace_data(ace_table, event_data, pathing_dict):
     ofile = os.path.join(
         pathing_dict["OUT_WEB_DIR"], "ACE_plot", f"{event_data['name']}_ace.png"
     )
-    ofile2 = os.path.join(
-        pathing_dict["OUT_WEB_DIR2"], "ACE_plot", f"{event_data['name']}_ace.png"
-    )
     os.makedirs(os.path.dirname(ofile), exist_ok=True)
-    os.makedirs(os.path.dirname(ofile2), exist_ok=True)
     plt.savefig(ofile, format="png", dpi=300)
-    plt.savefig(ofile2, format="png", dpi=300)
 
 #
 # --- Internal functions to assist cleanly formatting the input ACE table from text to astropy table
