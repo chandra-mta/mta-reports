@@ -37,6 +37,7 @@ WEB_DIR = "/data/mta_www/mta_interrupt"
 OUT_WEB_DIR = "/data/mta_www/mta_interrupt"
 SPACE_WEATHER_DIR = "/data/mta4/Space_Weather"
 INTERRUPT_DIR = "/data/mta/Script/Interrupt"
+ACE_DIR = "/data/mta4/Space_Weather/ACE"
 
 _PATHING_DICT = {
     "BIN_DIR": BIN_DIR,
@@ -46,6 +47,7 @@ _PATHING_DICT = {
     "OUT_WEB_DIR": OUT_WEB_DIR,
     "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
     "INTERRUPT_DIR": INTERRUPT_DIR,
+    "ACE_DIR": ACE_DIR
 }  #: Dictionary of input and output file paths for collecting all interruption data.
 
 TIME_FORMATS = [
@@ -273,6 +275,7 @@ if __name__ == "__main__":
             "OUT_WEB_DIR": f"{BIN_DIR}/test/_outTest",
             "SPACE_WEATHER_DIR": SPACE_WEATHER_DIR,
             "INTERRUPT_DIR": INTERRUPT_DIR,
+            "ACE_DIR": ACE_DIR
         }
         run_interrupt(event_data, pathing_dict)
 

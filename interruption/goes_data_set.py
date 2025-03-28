@@ -157,7 +157,7 @@ def fetch_GOES_data(time_start, time_stop, pathing_dict):
     # --- Once the data indices have been found, load that selection into an astropy table
     #
     goes_table = ascii.read(
-        data_file, data_start=data_start - 3, data_end=data_stop - 2
+        data_file, data_start=data_start - 3, data_end=data_stop - 2, header_start = 0
     )
     return goes_table
 
