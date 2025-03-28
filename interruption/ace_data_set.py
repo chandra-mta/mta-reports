@@ -29,11 +29,13 @@ import subprocess
 WEB_DIR = "/data/mta_www/mta_interrupt"
 OUT_WEB_DIR = "/data/mta_www/mta_interrupt"
 INTERRUPT_DIR = "/data/mta/Script/Interrupt"
+ACE_DIR = "/data/mta4/Space_Weather/ACE"
 
 PATHING_DICT = {
     "WEB_DIR": WEB_DIR,
     "OUT_WEB_DIR": OUT_WEB_DIR,
     "INTERRUPT_DIR": INTERRUPT_DIR,
+    "ACE_DIR": ACE_DIR
 }
 _FETCH_INTERVAL = 2 #: Number of days before and after interruption period to fetch trending data from.
 _ACE_INPUT_DATA_TIME_FORMAT = "%Y %m %d  %H%M"  #: Time format for input ACE radiation data archive written INTERRUPT_DIR.
@@ -61,6 +63,8 @@ _INPUT_ACE_COLUMNS = [
     "p795-1193",
     "p1060-1900",
     "aniso",
+    "intp112_187",
+    'flu_112_187'
 ]
 
 #
@@ -127,7 +131,7 @@ def ace_data_set(event_data, pathing_dict):
 
 
 def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
-    """Fetch ACE data from the ``INTERRUPT_DIR/Data`` archive files and format into an astropy table.
+    """Fetch ACE data from the ``ACE_DIR/Data`` archive files and format into an astropy table.
 
     :param time_start: Starting time for data fetch, defaults to two days before the start of the interruption event.
     :type time_start: ``CxoTime``
@@ -145,11 +149,7 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
     # --- Check if the interruption spans over the new year
     # --- and therefore need to construct ACE data table from two files.
     #
-    if time_start.datetime.year == time_stop.datetime.year:  # One Year File
-        ace_table = _single_file_fetch(time_start, time_stop, pathing_dict)
-    elif time_start.datetime.year != time_stop.datetime.year:  # Two Year Files
-        ace_table = _double_file_fetch(time_start, time_stop, pathing_dict)
-
+    ace_table = _single_file_fetch(time_start, time_stop, pathing_dict)
     #
     # --- Format complete time column
     #
@@ -160,8 +160,9 @@ def fetch_ACE_data_table(time_start, time_stop, pathing_dict):
         name="cxotime",
     )
     ace_table.add_column(datetime_col)
-
-    return unique(ace_table, keys="cxotime")
+    ace_table = unique(ace_table, keys="cxotime")
+    ace_table.reverse() #: Reversed as the ace.archive file is stored in reverse.
+    return ace_table
 
 
 def write_ace_files(ace_table, event_data, pathing_dict):
@@ -474,20 +475,20 @@ def _single_file_fetch(time_start, time_stop, pathing_dict):
     :rtype: ``astropy.table.Table``
 
     """
-    data_start = None
-    data_stop = None
+    line_num_start = None
+    line_num_stop = None
     data_file = os.path.join(
-        pathing_dict["INTERRUPT_DIR"], "Data", f"rad_data{time_start.datetime.year}"
+        pathing_dict["ACE_DIR"], "Data", "ace.archive"
     )
     #
     # --- Find data line for start
     #
-    while data_start is None:
+    while line_num_start is None:
         try:
-            data_start_search = f"grep -in '{time_start.strftime(_ACE_INPUT_DATA_TIME_FORMAT)}' {data_file}"
-            data_start = int(
+            line_num_start_search = f"grep -in '{time_start.strftime(_ACE_INPUT_DATA_TIME_FORMAT)}' {data_file}"
+            line_num_start = int(
                 subprocess.check_output(
-                    data_start_search, shell=True, executable="/bin/csh"
+                    line_num_start_search, shell=True, executable="/bin/csh"
                 )
                 .decode()
                 .split(":")[0]
@@ -505,12 +506,12 @@ def _single_file_fetch(time_start, time_stop, pathing_dict):
     #
     # --- Find data line for stop
     #
-    while data_stop is None:
+    while line_num_stop is None:
         try:
-            data_stop_search = f"grep -in '{time_stop.strftime(_ACE_INPUT_DATA_TIME_FORMAT)}' {data_file}"
-            data_stop = int(
+            line_num_stop_search = f"grep -in '{time_stop.strftime(_ACE_INPUT_DATA_TIME_FORMAT)}' {data_file}"
+            line_num_stop = int(
                 subprocess.check_output(
-                    data_stop_search, shell=True, executable="/bin/csh"
+                    line_num_stop_search, shell=True, executable="/bin/csh"
                 )
                 .decode()
                 .split(":")[0]
@@ -525,7 +526,10 @@ def _single_file_fetch(time_start, time_stop, pathing_dict):
                 raise FileNotFoundError(f"{data_file}")
         if time_stop < time_start:
             raise ValueError(f"Cannot find stop time line in {data_file}.")
-    ace_table = ascii.read(data_file, data_start=data_start, data_end=data_stop, names = _INPUT_ACE_COLUMNS)
+    #
+    # --- ace.archive stores data in reverse time order. So 'start' is a later line number
+    #
+    ace_table = ascii.read(data_file, data_start=line_num_stop, data_end=line_num_start, names = _INPUT_ACE_COLUMNS)
     return ace_table
 
 
