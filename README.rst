@@ -41,4 +41,4 @@ This should be done around two days after the Chandra science run is confirmed t
     * move mta_interrupt mta_interrupt~
     * cp -r /data/mta/www/mta_interrupt .
     * cd to mta_interrupt
-    * sed -i 's|mta_days|mta/RADIATION_new|g'  *.html
+    * sed -i 's|mta_days|mta/RADIATION|g'  *.html
