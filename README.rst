@@ -35,9 +35,9 @@ This should be done around two days after the Chandra science run is confirmed t
 
 5. This generates the report in the original mta_days web directory. Navigate to the /data/mta_www/mta_interrupt/Note_dir directory and create a <event_name>.txt file to list the email alerts, SOT shift reports, and radiation discussions that pertain to the shutdown.
 
-6. We also store a copy of the radiation interruptions in the RADIATION_new web directory.
+6. We also store a copy of the radiation interruptions in the RADIATION web directory.
 
-    * Navigate to the /data/mta4/www/RADIATION_new directory.
+    * Navigate to the /data/mta4/www/RADIATION directory.
     * move mta_interrupt mta_interrupt~
     * cp -r /data/mta/www/mta_interrupt .
     * cd to mta_interrupt
