@@ -1,15 +1,11 @@
 #!/proj/sot/ska3/flight/bin/python
+"""
+**create_weekly_report.py** Extract instrumentation data on Chandra and compile into weekly report
 
-#############################################################################
-#                                                                           #
-#           create_weekly_report.py: create weekly report                   #
-#                                                                           #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                       #
-#                                                                           #
-#           Last Update: Oct 12, 2022                                       #
-#                                                                           #
-#############################################################################
+:Author: W. Aaron (william.aaron@cfa.harvard.edu)
+:Last Updated: Jun 12, 2025
 
+"""
 import sys
 import os
 import re
@@ -28,40 +24,33 @@ DATA_DIR = "/data/mta/Script/Weekly/Data"
 WEB_DIR = "/data/mta4/www/REPORTS"
 CTI_DIR = "/data/mta_www/mta_cti"
 SIM_DATA_DIR = "/data/mta/Script/SIM_move/Data"
-sys.path.append(BIN_DIR)
 
 import find_focal_temp_peaks    as fftp
 import plot_acis_focal_temp     as paft
 import create_telem_table       as ctt
 import create_bad_pixel_table   as cbpt
 import find_recent_observations as frobs
-from calendar import month_abbr
+from calendar import month_abbr, THURSDAY
 
 #
 #--- admin email addresses (list) including those passed through sys args
 #
 ADMIN  = ['mtadude@cfa.harvard.edu']
 #
-#--- ephin linst
-#
-ephtv_list = ['5EIOT', '5EPHINT', 'HKEBOXTEMP', 'HKGHV', 'HKN6I', 'HKN6V', 'HKP27I',\
-              'HKP27V', 'HKP5I', 'HKP5V', 'HKP6I', 'HKP6V', 'TEIO', 'TEPHIN']
-#
 #--- instrument trend list
 #
-inst_list = ['SIM', 'PCAD', 'Ground Computed Gradients', 'Spacecraft Bus and Subsystem Trends',\
+INST_LIST = ['SIM', 'PCAD', 'Ground Computed Gradients', 'Spacecraft Bus and Subsystem Trends',\
              'OBA Thermal', 'HRMA Thermal', 'Gratings', 'ACIS', 'HRC', 'Ground Computations', 'EPHIN']
 
 #------------------------------------------------------------------------------------------
 #-- create_weekly_report: main script to create the weekly report for the week          ---
 #------------------------------------------------------------------------------------------
 
-def create_weekly_report(date, year, debug = 0):
+def create_weekly_report(date, year):
     """
     main script to set up the weekly report template for the week
     input:  date    --- date in the format of mmdd (e.g. 0910)
             year    --- year in the format of yyyy (e.g. 2015)
-            debug   --- if it is other than 0, print out some output
     output: weekly report /data/mta4/www/REPORT/<yyyy>/<mm><dd>.html
                           /data/mta4/www/REPORT/<yyyy>/<mm><dd>_fptemp.png
             it also creates local copies in <data_dir>
@@ -201,22 +190,7 @@ def create_weekly_report(date, year, debug = 0):
     s1 = sday0[0:3] + ' ' + sday0[3:5]
     s2 = sday6[0:3] + ' ' + sday6[3:5]
     index = '<td> <a href="./' + str(year) + '/' + file_date + '.html">' + s1 + ' - ' + s2 + '</a>'
-#
-#--- debugging output
-#
-    if debug != 0:
-        print("file_name; "       + file_name )
-        print("title date: "      + titledate)
-        print("ldate: "           + ldate)
-        print("fptemp: "          + fptemp)
-        print("fpext_range: "     + fpext_range)
-        print("fpstart: "         + fpstart)
-        print(" fplsub: "         + fplsub)
-        print(" fpdsub: "         + fpdsub)
-        print("irudate: "         + irudate)
-        print("title: "           + title)
-        print("last_trend_date: " + last_trend_date)
-        print("index: "           + index)
+
 #
 #--- create a work directory
 #
@@ -880,7 +854,7 @@ def find_inst_trend_name(cdate=''):
 #
 #--- find which instrument is due on that date
 #
-    dlen  = len(inst_list)
+    dlen  = len(INST_LIST)
     dspan = dlen * day7
     diff  = last_thu_s - base_time
 
@@ -891,7 +865,7 @@ def find_inst_trend_name(cdate=''):
 
     tdiff = int(diff / day7)
     pos = int(tdiff - dlen*int(tdiff /dlen))
-    inst = inst_list[pos]
+    inst = INST_LIST[pos]
 #
 #--- date of that Thu
 #
