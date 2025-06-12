@@ -1,0 +1,93 @@
+
+#####################
+Create Weekly Report
+#####################
+
+This directory holds scripts to create the weekly report
+
+Scripts:
+=========
+weekly_wrap_script
+weekly_main_script          --- environment setting scripts
+
+
+create_weekly_report.py
+-----------------------
+The main script to create the weekly report. This calls all other scripts.
+input:  date    ---- date in <mm>/<dd> format 
+        year    ---- year in <yyyy> format
+                    if these are not given, the date of the past closest Thu is used
+        debug   --- setting debugging more if > 0
+
+output: <html_dir>/<year>/<mm><dd>.html
+        <html_dir>/<year>/<mm><dd>_fptemp,png
+	Notification Email
+	---Extra Emails can be passed through sys args 'email=<address>' or 'email={<address1>,<address2>}' for multiple emails
+
+find_focal_temp_peaks.py
+---------------------------
+estimate focal temperature peak position, temperature, and the peak width
+input:  year    --- year
+        month   --- month
+        day     --- day of month
+                    if these are not given the data of the past closest Thu is used
+        also used:
+        /data/mta/Script/ACIS/Focal/Data/focal_plane_data_5min_avg*
+
+output: <base_dir>/Data/Focal/focal_temp_list
+
+plot_acis_focal_temp.py
+-----------------------
+plot acis focal temperature trend 
+input:  tyear   --- year
+        yday    --- day of the year
+                    if these are not given the data of the past closest Thu is used
+        also used:
+        /data/mta/Script/ACIS/Focal/Data/focal_plane_data_5min_avg_
+        dataseeker extracted result of altitude
+
+output: <base_dir>/Data/Focal/acis_focal_temp.png
+
+
+find_recent_observations.py
+---------------------------
+create a data analysis link table of recent observations for the weekly
+
+input:  etime   --- plot ending time in seconds from 1998.1.1
+            data are read from:
+            /data/mta/www/ap_report/events/* or /data/mta/www/mp_report/events/*
+
+output: a text of html table displaying the recent observations and analysis links 
+
+
+create_telem_table.py
+--------------------
+create telemetry table for weekly report
+
+input:  start   --- start time in seconds from 1998.1.1
+        stop    --- stop time in seconds from 1998.1.1
+            data are read from:
+            /data/mta/www/ap_report/*/data/*_summ.fits
+
+output: a text of html table dispalying the telemetry data information
+
+create_bad_pixel_table.py
+--------------------------
+create bad pixel table for the weekly report
+
+input: none, but read from:
+             /data/mta/Script/ACIS/Bad_pixels/Data/*
+
+output: a text of html table displaying the bad pixel information
+
+
+NOTE:
+        * you need to manually edit out extra focal plane temp entry
+        * you also need to link to the main table
+
+cron job:
+=========
+
+as mta on c3po-v
+15 7 * * 5 cd /data/mta/Script/Weekly/Scripts; /data/mta/Script/Weekly/Scripts/weekly_wrap_script >> $HOME/Logs/weekly_report.cron 
+

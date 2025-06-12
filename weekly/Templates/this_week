@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+
+
+<head>
+    <title>M&TA Monitoring Report #TITLEDATE# </title>						<!-- ### update ### -->
+
+    <link rel="stylesheet" type="text/css" href='https://cxc.cfa.harvard.edu/mta/REPORTS/Template/mta.css' />
+
+    <script language="JavaScript">
+    	function WindowOpener(imgname) {
+    		msgWindow = open("","displayname","toolbar=no,directories=no,menubar=no,location=no,scrollbars=no,status=no,,width=1229,height=936,resize=no");
+    		msgWindow.document.clear();
+    		msgWindow.document.write("<html><title>Trend plot:   "+imgname+"</TITLE>");
+    		msgWindow.document.write("<body bgcolor='black'>");
+    		msgWindow.document.write("<img src='/mta/DAILY/mta_deriv/"+imgname+"' border =0 ><p></p></body></html>")
+    		msgWindow.document.close();
+    		msgWindow.focus();
+    	}
+
+    	function WindowOpener2(imgname) {
+    		msgWindow = open("","displayname","toolbar=no,directories=no,menubar=no,location=no,scrollbars=no,status=no,,width=760,height=550,resize=no");
+    		msgWindow.document.clear();
+    		msgWindow.document.write("<html><title>IRU Trend plot:   "+imgname+"</TITLE>");
+    		msgWindow.document.write("<body bgcolor='black'>");
+    		msgWindow.document.write("<img src='/data/mta4/www/DAILY/mta_pcad/IRU/Plots_new/"+imgname+"' border =0 ><p></p></body></html>")
+    		msgWindow.document.close();
+    		msgWindow.focus();
+    	}
+
+    	function WindowOpener3(imgname) {
+    		msgWindow = open("","displayname","toolbar=no,directories=no,menubar=no,location=no,scrollbars=yes,status=no,,width=1000,height=1500,resize=no");
+    		msgWindow.document.clear();
+    		msgWindow.document.write("<html><title>Trend plot:   "+imgname+"</TITLE>");
+    		msgWindow.document.write("<body bgcolor='black'>");
+    		msgWindow.document.write("<iframe src='" +imgname+ "' border =0 width=980 height=1480><p></p></body></html>")
+    		msgWindow.document.close();
+    		msgWindow.focus();
+        }
+    </script>
+
+</head>
+
+
+
+<body>
+
+<!-- ### REPORT STARTS HERE ### -->
+
+<h1>   MTA Monitoring Report #TITLEDATE#    </h1>						<!-- ### update ### -->
+
+
+<p style='text-align:right'>
+<a href ="/mta/REPORTS/"> <strong>Archive of all weekly reports</strong> </a>
+<br />
+<a href="/mta/REPORTS/MONTHLY"> <strong>Archive of monthly reports</strong></a>
+</p>
+
+<hr />
+
+<!-- ### READIATION REPORT ### -->
+<h2><a href="/mta/RADIATION">Radiation</a></h2>
+<!--
+<p>
+Observing stopped by ground activation of SCS-107 at 2015:173:22:40z.
+</p>
+<p>
+<img src='./20150622_goes.png', width='80%'>
+</p>
+-->
+
+<p>
+Quiet
+</p>
+
+
+<!-- ### CTI REPORT ### -->
+
+<h2><a href="/mta_days/mta_cti/cti_page.html">Detrended CTI </a></h2>
+
+<p>
+Although we prefer to quote CTI values of the cleanest data (FT <= -119.7 C, int time > 7000sec), 
+the data that fulfills these conditions are getting rare. We now quote CTI based on temperature 
+corrected data for Focal plane temperature <= -118.5 C).
+
+</p>
+
+<p>
+The unit is now CTI/year not CTI/day.
+</p>
+
+<p>
+<table class='emshift'>
+<tr>
+<th>Average of ACIS-I CCDs (MnKa) slope: </th><td> #ATEMP# CTI/year </td><td> (#ATEMP2# CTI/day) </td>	
+</tr><tr>
+<th>Detrended slope:                     </th><td> #DTEMP# CTI/year </td><td> (#DTEMP2# CTI/day) </td>
+</tr>
+</table>
+</p>
+
+
+<!-- ### BAD PIXEL REPORT ### -->
+
+<h2><a href="/mta_days/mta_bad_pixel/mta_bad_pixel_list.html"> ACIS Warm Pixels </a></h2>
+
+<p>
+We display all bad pixels that have showed up in past, and, if any, previously unknown bad pixels appeared 
+in the last 14 days. We also list hot pixels (defined as 1000 above the average of bias background). Warm 
+columns 509-514 are probably due to boundaries.
+</p>
+<p style='font-color:orange'>
+New definitions of warm pixels and flickering pixels (May 15, 2014). If a pixel displays the level beyond 
+a threshold for more than 70% of the time in the past two weeks, the pixel is categorized as a "warm" pixel. 
+If a pixel is above the threshold more than 30% of time but less than 70% of the time in the past two weeks, 
+the pixel is categorized as a "flickering" pixel.
+</p>
+
+<table border=1 cellpadding=3>
+<!--
+<tr align=center><th>&#160<th>CCD0<th>CCD1<th>CCD2<th>CCD3<th>CCD4<th>CCD5<th>CCD6<th>CCD7<th>CCD8<th>CCD9</tr>
+-->
+<!-- BAD PIXEL TABLE START -->
+
+
+BAD_PIXEL_TABLE
+
+</table>
+
+<!-- BAD PIXEL TABLE END  -->
+
+<br>
+
+<!-- ### FOCAL TEMPERATURE REPORT ### -->
+
+<h2><a href="https://cxc.cfa.harvard.edu/mta_days/mta_fp/main_fp_temp.html"> ACIS Focal Plane Temperature </a></h2>
+<p>
+For this period, #TEMPPEAK#  peaks are  observed. 									<!-- ### update ### -->
+</p>
+
+<ul>
+<table class='emshift'>
+<tr><th class='uline'>Day (DOY)</th><th class='uline'>Temp (C)</th><th class='uline'>Width (Days)</th><th>&#160</th></tr>
+
+<!-- ////  EXAMPLE INPUT LINE ///
+<tr align=center><td> 356.83 </td><td> -107.09 </td><td> 0.29 <td align=left>&#160</td></tr>	
+-->
+#TEMPLIST#
+</table>
+<br />
+</ul>
+
+<p>
+Weekly focal plane temperature with sun angle, earth angle, and altitude overplotted.  
+Sun angle is the solar array angle, that is the angle between the sun and the optical axis (+X axis).  
+The earth angle is the angle between earth and the ACIS radiator (+Z axis).  
+Altitude varies from 34 kkm to 128 kkm.
+</p>
+<br />
+
+<div style='text-align:center'>
+<img src="#DDATE#_fptemp.png" style="width:90%;"><br /> 				      					<!-- ### update ### -->
+</div>
+
+
+
+<!-- ### SIM MOVEMENT ### -->
+
+<h2><a href ="/mta_days/mta_sim/">SIM Movements</a></h2>
+
+<p>
+#WSTEP# TSC moves this period<br />
+<ul>
+<table class='emshift'>
+<tr>
+<th style='text-align:left'>weekly average time/step</th><td>  #WMOVE# s </td> 				<!-- ### update ### -->
+</tr><tr> 
+<th style='text-align:left'>mission average time/step</th><td> #TMOVE# s </td>				<!-- ### update ### -->
+
+</tr>
+</table>
+</ul>
+</p>
+
+
+<!-- ### TELEMETRY ### -->
+
+<h2><a href="/mta_days/ap_report/mta_days.html">Telemetry</a></h2>
+<p>
+New violations or new extrema are shown in <em style='font-style:normal; color:#0000ff'>blue cells</em>.
+</p>
+
+<!-- START INSERT TELEM TABLE HERE -->
+
+TELEM_TABLE
+
+<!-- END INSERT TELEM TABLE HERE -->
+</ul>
+
+<br /><br />
+
+ 
+<!-- ###  IRU REPORT ### -->
+
+<H2><a href="/mta/DAILY/mta_pcad/IRU/iru_bias_trend.html"> IRUs</a></H2>
+<!--
+<H2><a href="/mta_days/mta_pcad/IRU/bias.html"> IRUs</a></H2>
+<ul>
+<li><a href="/mta_days/mta_pcad/IRU/Plots/#IRUSPAN1#_bias.gif">Gyro Bias Drift</a>		
+<li><a href="/mta_days/mta_pcad/IRU/Plots/#IRUSPAN2#_hist.gif">Gyro Bias Drift Histogram</a>	
+</ul>
+-->
+<table border=0 style='margin-left:auto;margin-right:auto;'>
+    <tr>
+        <th style='width:45%;'>Gyro Bias Drift</th>
+        <th style='width:45%;'>Gyro Bias Drift Histogram</th>
+    </tr>
+    <tr>
+        <td style='width:45%;'>
+            <img src='/mta/DAILY/mta_pcad/IRU/Plots_new/#IRUSPAN1#_bias.png' style='width:90%;text-align:center;'>
+        </td>
+        <td style='width:45%;'>
+            <img src='/mta/DAILY/mta_pcad/IRU/Plots_new/#IRUSPAN2#_hist.png' style='width:90%;text-align:center;'>
+        </td>
+    </tr>
+</table>
+
+
+<!-- ### RECENT OBSERVATIONS ### -->
+
+<h2> <a href="/mta_days/ap_report/events/mta_events.html"> Recent Observations</a></h2>
+
+<p>
+<!--
+<table border=0 width=100%>
+<tr><th class='uline'>OBSID</th>
+    <th class='uline'>DETECTOR</th>
+    <th class='uline'>GRATING</th>
+    <th class='uline' style='text-align:left'>TARGET</th>
+    <th class='uline'>ANALYSIS</th>
+    <th class='uline'>ACA</th></tr>
+-->
+
+<!-- PHOTON SUMMARY BEGIN -->
+
+PHOTON_TABLE
+
+<!-- PHOTON SUMMARY END -->
+
+</p>
+
+<!-- ### TRENDING ### -->
+
+<h2><a href ="https://cxc.cfa.harvard.edu/mta/MSID_Trends/mta_trending_main.html">Trending</a> </h2>
+
+
+<p>
+This week's focus is
+<em  style='font-style:normal; color:#B0E0E6'>
+<strong>#TITLE#</strong>							<!-- ### update ### -->
+</em>
+</p>
+
+<p>
+Last reported on
+<a href ="/mta/REPORTS/#RYEAR#/#PREVREPORT#.html">#PREVDATE#</a>. <br>						<!-- ### update ### -->
+</p>
+
+<p>
+Only the most interesting or representative msids are shown below.
+For a full listing choose the bulletted link.<br>
+</p>
+
+<!--
+<p>
+Min/max envelopes in dark blue appear on the trending plots. The envelopes are 4th degree 
+fits to the monthly minimum and maximum values for each MSID.
+
+The final polynomial form and binning are still being experimented with.  We will soon add 
+to the trending pages a report of the fits and predictions they give on future limit violations.  
+The light blue curve is our original smoothing of all the data over 30 day moving boxcars.  
+The green/yellow line is a linear fit to all the data; the break occurs at a limit change.
+</p>
+-->
+
+<br />
+
+
+<!-- ### EXAMPLE ###
+<ul>
+<div style="color:#FFFFFF"><li><a href="/mta/DAILY/mta_deriv/xxxxx.html">xxxx</a></li></div>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7></tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+
+</table>
+</ul>
+
+
+-->
+#TREND#
+
+<hr />
+<p>
+<em>
+If you have any questions, please contact:
+<a href='mailto:swolk@head.cfa.harvard.edu'>swolk@head.cfa.harvard.edu</a>
+</em>
+</p>
+
+</body>
+</html>

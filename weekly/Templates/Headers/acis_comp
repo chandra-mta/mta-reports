@@ -1,0 +1,26 @@
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/compacispwr.html">ACIS Electronics</a></li></font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7>Computed ACIS Electronics</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+
+<tr><td><a href="javascript:WindowOpener('_1dppwra_avgA.gif')">1DPPWRA</a></td>
+
+
+
+<td><font color="#FFFFFF">W</font></td>
+<td> DPA POWER A</td></tr>
+
+
+<tr><td><a href="javascript:WindowOpener('_1dppwrb_avgA.gif')">1DPPWRB</a></td>
+
+
+
+<td><font color="#FFFFFF">W</font></td>
+<td> DPA P WER B</td></tr>
+</table>
+
+</ul>
+<br />
+
+
