@@ -1,0 +1,44 @@
+epsbatt.html
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/epsbatt.html">Battery Usage</a></li></font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7></tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<-->
+epsbatt_qtr.html
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/epsbatt_qtr.html">Battery Usage - Previous Quarter</a></li></font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7> Previous Quarter</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<-->
+sc_main_temp.html
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/sc_main_temp.html">S/C Main Temperatures</a></li></font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7></tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<-->
+sc_main_temp_qtr.html
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/sc_main_temp_qtr.html">>S/C Main Temperatures - Previous Quarter</a></li></font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7>Previous Quarter</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<-->
+sc_anc_temp.html
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/sc_anc_temp.html">S/C Anc Temperature</a></li></font>
+</font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7></tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<-->
+sc_anc_temp_qtr.html
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/sc_anc_temp_qtr.html">S/C Anc Temperature  - Previous Quarter</a></li></font>
+</font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7></tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<-->

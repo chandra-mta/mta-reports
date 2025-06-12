@@ -1,0 +1,136 @@
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/gratgen.html">Gratings</a></li></font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7></tr>
+<tr align=center><td colspan=7>HETG Insertions</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('i4hposaro_hi_avgA.gif')">I4HPOSARO_HI</a></td>
+
+
+
+<td><font color="#33CCFF">deg</font></td>
+<td> Initial pot. angle (side A)</td></tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('i4hposbro_hi_avgA.gif')">I4HPOSBRO_HI</a></td>
+
+
+<td><font color="#33CCFF">deg</font></td>
+<td> Initial pot. angle (side B)</td></tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('emf_avg_long_hi_avgA.gif')">EMF_AVG_LONG_HI</a></td>
+
+
+
+<td><font color="#33CCFF">V</font></td>
+<td> avg EMF on long move</td></tr>
+
+
+<!-- -->
+
+
+<tr align=center><td colspan=7>HETG Retractions</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('f4hposaro_hr_avgA.gif')">F4HPOSARO_HR</a></td>
+
+
+<td><font color="#33CCFF">deg</font></td>
+<td> Final pot. angle (side A)</td></tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('f4hposbro_hr_avgA.gif')">F4HPOSBRO_HR</a></td>
+
+
+<td><font color="#33CCFF">deg</font></td>
+<td> Final pot. angle (side B)</td></tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('emf_avg_long_hr_avgA.gif')">EMF_AVG_LONG_HR</a></td>
+
+
+<td><font color="#33CCFF">V</font></td>
+<td> avg EMF on long move</td></tr>
+
+<!-- -->
+
+
+
+
+<tr align=center><td colspan=7>LETG Insertions</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('n_short_li_avgA.gif')">N_SHORT_LI</a></td>
+
+
+<td><font color="#33CCFF">num</font></td>
+<td> Number of short moves</td></tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('i4hposaro_li_avgA.gif')">I4HPOSARO_LI</a></td>
+
+
+<td><font color="#33CCFF">deg</font></td>
+<td> Initial pot. angle (side A)</td></tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('i4hposbro_li_avgA.gif')">I4HPOSBRO_LI</a></td>
+
+
+<td><font color="#33CCFF">deg</font></td>
+<td> Initial pot. angle (side B)</td></tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('emf_avg_long_li_avgA.gif')">EMF_AVG_LONG_LI</a></td>
+
+
+<td><font color="#33CCFF">V</font></td>
+<td> avg EMF on long move</td></tr>
+
+<!-- -->
+
+
+<tr align=center><td colspan=7>LETG Retractions</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('n_moves_lr_avgA.gif')">N_MOVES_LR</a></td>
+
+
+<td><font color="#33CCFF">num</font></td>
+<td> Number of moves</td></tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('n_short_lr_avgA.gif')">N_SHORT_LR</a></td>
+
+
+<td><font color="#33CCFF">num</font></td>
+<td> Number of short moves</td></tr>
+
+<!-- -->
+
+<tr><td><a href="javascript:WindowOpener('emf_avg_long_lr_avgA.gif')">EMF_AVG_LONG_LR</a></td>
+
+
+<td><font color="#33CCFF">V</font></td>
+<td> avg EMF on long move</td></tr>
+</table>
+</ul>
+<br />

@@ -1,0 +1,3 @@
+cd /data/mta/Script/Weekly/Scripts/
+
+/data/mta/Script/Weekly/Scripts/create_weekly_report.py -m flight

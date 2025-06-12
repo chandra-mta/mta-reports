@@ -1,0 +1,6 @@
+Before running the weekly script, you should modify the input for the week.
+However, the basic input are saved in Base_list directory and you can just 
+copy it to this diretory. 
+
+If you want to update the Base_list content, use Script/create_msid_list.perl
+to extract new input and move it to an appropriate base list. 

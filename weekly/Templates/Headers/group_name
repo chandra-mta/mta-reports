@@ -1,0 +1,25 @@
+acistemp:ACIS Thermal
+deahk_temp:DEA/DPA Thermal
+deahk_elec:DEA/DPA Electronics
+ephtv:EPHIN Temperatures and Voltages
+gratgen:Gratings
+compacispwr:ACIS Electronics
+compsimoffset:Computed SIM Thermal
+gradcap:HRMA CAP
+gradfap:HRMA FAP
+gradsstrut:Spacecraft Struts
+hrctemp:HRC Thermal
+hrchk:HRC Housekeeping
+hrmatherm:HRMA Thermal
+hrmastruts:HRMA Struts
+obaheaters:OBA Heaters
+hrmaheaters:HRMA Heaters
+pcaditv:IRU Temperatures and Voltages
+pcadgdrift:Drift rate updates to gyros
+simtemp:SIM Thermal
+epsbatt:Battery Usage
+sc_main_temp:S/C Main Temperatures
+sc_anc_temp:S/C Anc Temperature
+acistemp_att:ACIS Thermal
+pcadtemp_att:PCAD Thermal
+obaheaters_att:OBA Heaters

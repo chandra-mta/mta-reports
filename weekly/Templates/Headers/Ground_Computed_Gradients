@@ -1,0 +1,21 @@
+gradcap.html
+<ul>
+<div style="color:#FFFFFF"><li><a href="/mta/DAILY/mta_deriv/gradcap.html">HRMA CAP</a></li></div>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7>Gradients HRMA CAP</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<-->
+gradfap.html
+<ul>
+<div style="color:#FFFFFF"><li><a href="/mta/DAILY/mta_deriv/gradfap.html">HRMA FAP</a></li></div>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7>Gradients HRMA FAP</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<-->
+gradsstrut.html
+<ul>
+<div style="color:#FFFFFF"><li><a href="/mta/DAILY/mta_deriv/gradsstrut.html">Spacecraft Struts</a></li></div>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7>Gradients Spacecraft Struts</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<-->

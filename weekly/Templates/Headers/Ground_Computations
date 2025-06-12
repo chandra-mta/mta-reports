@@ -1,0 +1,14 @@
+compacispwr.html
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/compacispwr.html">ACIS Electronics</a></li></font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7>Computed ACIS Electronics</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<-->
+compsimoffset.html
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/compsimoffsetb.html">Computed SIM Thermal</a></li></font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7>Computed SIM Theraml</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<-->
