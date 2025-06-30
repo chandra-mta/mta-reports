@@ -10,7 +10,7 @@
 import os
 import re
 from astropy.io import ascii
-from astropy.table import vstack
+from astropy.table import vstack, Table
 from cxotime import CxoTime
 from datetime import timedelta
 import numpy as np
@@ -50,16 +50,7 @@ def plot_acis_focal_temp(dt, pathing_dict):
     """
 
     focal_temp_table = read_focal_temp(dt, pathing_dict)
-
-#
-#--- convert time format to yday
-#
-    [ftime, byear]     = convert_time_format(ftime)
-#
-#--- extract altitude data and sun angle data
-#
-    [atime, alt, sang] = read_orbit_data(cstart, cdate)
-    [atime, byear]     = convert_time_format(atime)
+    orbit_data_table = read_orbit_data(dt, pathing_dict)
 #
 #--- convert altitude to normalized to sun angle (range between 0 and 180)
 #
@@ -85,44 +76,34 @@ def read_focal_temp(dt, pathing_dict):
     #
     # --- Cut table to time period of one week starting six days before dt and ending at the end of the day of dt
     #
-    start = CxoTime(dt - timedelta(days=6))
-    stop = CxoTime(dt + timedelta(seconds = 86399))
-    sel = np.logical_and(focal_temp_table['cxotime'] > start.secs, focal_temp_table['cxotime'] < stop.secs)
+    cxostart = CxoTime(dt - timedelta(days=6))
+    cxostop = CxoTime(dt + timedelta(seconds = 86399))
+    sel = np.logical_and(focal_temp_table['cxotime'] > cxostart.secs, focal_temp_table['cxotime'] < cxostop.secs)
     return focal_temp_table[sel]
 
-def read_orbit_data(tstart, tstop):
+def read_orbit_data(dt, pathing_dict):
     """
     read altitude and sun angle data
     input:  tstart  --- starting time in seconds from 1998.1.1
             tstop   --- stopping time in seconds from 1998.1.1
     output: data    --- a list of lists of [time alt, sun_angle]
     """
-#
-#--- set up the input for dataseeker and extract the data
-#
-    fits = 'dataseek_avg.fits'
-    cmd  = 'touch infile'
-    os.system(cmd)
 
-    cmd1 = '/usr/bin/env PERL5LIB=  '
-    cmd2 = " dataseeker.pl infile=infile outfile=" + fits + " "
-    cmd2 = cmd2 + "search_crit='columns=pt_suncent_ang,sc_altitude timestart=" + str(tstart)
-    cmd2 = cmd2 + " timestop=" + str(tstop) + "' loginFile=" + LOGINFILE
-
-    cmd  = cmd1 + cmd2
+    cxostart = CxoTime(dt - timedelta(days=6))
+    cxostop = CxoTime(dt + timedelta(seconds = 86399))
+    #: Dataseeker only outputs to intermediate fits file. Therefore generate file with default name and running date, then clean after read
+    fits = f"dataseek_{dt.strftime('%Y_%m_%d')}.fits"
+    cmd = f"dataseeker.pl outfile={fits} "
+    cmd += f"search_crit='columns=pt_suncent_ang,sc_altitude timestart={cxostart.secs} timestop={cxostop.secs} "
+    cmd += f"loginFile={LOGINFILE}"
     bash(cmd, env=ASCDSENV)
 #
 #--- read fits file and extract the data
 #
-    cols = ['time', 'sc_altitude', 'pt_suncent_ang']
-    data = read_fits_data(fits, cols)
-#
-#--- clean up
-#
+    hout = pyfits.open(fits)
+    orbit_data_table = Table(hout[1].data)
     os.remove(fits)
-    os.remove('infile')
-
-    return data
+    return orbit_data_table
 
 def select_data_by_date(x, y, tstart, tstop):
     """
@@ -337,23 +318,3 @@ def set_focal_temp_range(v):
     vmax = int(vmax + 0.02 * diff)
 
     return [vmin, vmax]
-
-
-def read_fits_data(fits, cols):
-    """
-    read fits data
-    input:  fits    --- fits file name
-            cols    --- a list of col names to be extracted
-    output: save    --- a list of lists of data extracted
-    """
-
-    hout = pyfits.open(fits)
-    data = hout[1].data
-    hout.close()
-
-    save = []
-    for col in cols:
-        out = data[col]
-        save.append(out)
-
-    return save
