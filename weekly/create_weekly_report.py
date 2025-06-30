@@ -24,6 +24,7 @@ DATA_DIR = "/data/mta/Script/Weekly/Data"
 WEB_DIR = "/data/mta4/www/REPORTS"
 CTI_DIR = "/data/mta_www/mta_cti"
 SIM_DATA_DIR = "/data/mta/Script/SIM_move/Data"
+FOCAL_DIR = "/data/mta/Script/ACIS/Focal/Data"
 
 PATHING_DICT = {
     "BIN_DIR": BIN_DIR,
@@ -31,7 +32,8 @@ PATHING_DICT = {
     "DATA_DIR": DATA_DIR,
     "WEB_DIR": WEB_DIR,
     "CTI_DIR": CTI_DIR,
-    "SIM_DATA_DIR": SIM_DATA_DIR
+    "SIM_DATA_DIR": SIM_DATA_DIR,
+    "FOCAL_DIR": FOCAL_DIR
 }
 
 import find_focal_temp_peaks    as fftp
@@ -53,7 +55,7 @@ INST_LIST = ['SIM', 'PCAD', 'Ground Computed Gradients', 'Spacecraft Bus and Sub
 TIME_FORMATS = ['%Y:%m:%d', '%Y/%m/%d',"%Y:%j:%H:%M:%S", "%Y:%m:%d:%H:%M:%S"]
 
 
-def create_weekly_report(date, year):
+def create_weekly_report(dt, pathing_dict):
     """
     main script to set up the weekly report template for the week
     input:  date    --- date in the format of mmdd (e.g. 0910)
@@ -158,7 +160,7 @@ def create_weekly_report(date, year):
 #
 #--- focal temp file name
 #
-    paft.plot_acis_focal_temp(year, ydate)
+    paft.plot_acis_focal_temp(dt, pathing_dict)
     fftp.find_focal_temp_peaks(year, mon, day, 0.3)
 
     fptemp        = file_date + '_fptemp.png'
@@ -901,7 +903,7 @@ def get_recent_weekday(w = THURSDAY, dt = datetime.now().replace(hour=0, minute=
                 break
             except ValueError:
                 pass
-    elif isinstance(dt, None):
+    elif dt is None:
         dt = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     diff = dt.weekday() - w
     return dt - timedelta(days=diff%7)
@@ -952,14 +954,12 @@ if __name__ == "__main__":
         os.makedirs(f"{DATA_DIR}/Focal", exist_ok = True)
         os.makedirs(WEB_DIR, exist_ok = True)
 
-        PATHING_DICT = {
+        PATHING_DICT.update({
             "BIN_DIR": BIN_DIR,
             "TEMPLATE_DIR": TEMPLATE_DIR,
             "DATA_DIR": DATA_DIR,
             "WEB_DIR": WEB_DIR,
-            "CTI_DIR": CTI_DIR,
-            "SIM_DATA_DIR": SIM_DATA_DIR
-        }
+        })
 
         create_weekly_report(dt, PATHING_DICT)
 
