@@ -9,8 +9,12 @@
 """
 import os
 import re
-import time
-import numpy
+from astropy.io import ascii
+from astropy.table import vstack
+from cxotime import CxoTime
+from datetime import timedelta
+import numpy as np
+
 import astropy.io.fits  as pyfits
 import Chandra.Time
 from calendar import isleap
@@ -36,29 +40,17 @@ LOGINFILE = "/home/mta/loginfile"
 FOCAL_COLUMNS = ['cxotime', 'focal', '1crat', '1crbt']
 
 def plot_acis_focal_temp(dt, pathing_dict):
+    """Plot acis focal temperature; the plotting range is the last 7 days
 
-
-
-
-    read_focal_temp(dt, pathing_dict)
+    :param dt: datetime for the ending day of the weeklong period
+    :type dt: DateTime
+    :param pathing_dict: dictionary containing file system paths
+    :type pathing_dict: dict
+    :File Out: <data_dir>/Focal/acis_focal_temp.png 
     """
-    plot acis focal temperature; the plotting range is the last 7 days
-    input:  none, but read from several database
-    output: ./acis_focal_temp.png
-    """
-    if tyear == '':
-        tyear  = int(float(time.strftime('%Y', time.gmtime())))
-        yday   = int(float(time.strftime('%j', time.gmtime())))
-        today  = time.strftime('%Y:%j:00:00:00', time.gmtime())
-    else:
-        today = f"{tyear}:{yday:03}:00:00:00"
 
-    cdate  = Chandra.Time.DateTime(today).secs
-    cstart = cdate - 86400.0 * 7.0
-#
-#--- extract focal temp data
-#
-    #[ftime, focal]     = read_focal_temp(tyear, yday, cstart, cdate)
+    focal_temp_table = read_focal_temp(dt, pathing_dict)
+
 #
 #--- convert time format to yday
 #
@@ -81,39 +73,22 @@ def plot_acis_focal_temp(dt, pathing_dict):
     plot_data(ftime, focal, atime, alt, sang, ltime[0], ltime[1], xlabel)
 
 def read_focal_temp(dt, pathing_dict):
-    """
-    read focal plane temperature data
-    input:  tyear   --- this year
-            yday    --- today's y date
-            tstart  --- starting time in seconds from 1998.1.1
-            tstop   --- stopping time in seconds from 1998.1.1
-    output: ftime   --- a list of time 
-            focal   --- a list of focal temp
-    """
-#
-#--- if y daay is less than 8, read the data from the last year
-#
-    if yday < 8:
-        ifile = f"{FOCAL_DIR}/focal_plane_data_5min_avg_{tyear-1}"
-        data   = read_data_file(ifile, sep='\s+', c_len=2)
-        ftime  = data[0]
-        focal  = data[1]
-    else:
-        ftime  = []
-        focal  = []
-#
-#--- otherwise, just read this year
-#
-    ifile = f"{FOCAL_DIR}/focal_plane_data_5min_avg_{tyear}"
-    data   = read_data_file(ifile, sep='\s+', c_len=2)
-    ftime  = ftime + data[0]
-    focal  = focal + data[1]
-#
-#--- select out the data for the last 7 days
-#
-    [ftime, focal] = select_data_by_date(ftime, focal, tstart, tstop)
 
-    return [ftime, focal]
+    focal_dir = pathing_dict['FOCAL_DIR']
+    if dt.timetuple().tm_yday < 8:
+        #: Change of year
+        focal_temp_table = ascii.read(f"{focal_dir}/focal_plane_data_5min_avg_{dt.year-1}", names=FOCAL_COLUMNS)
+        add_table = ascii.read(f"{focal_dir}/focal_plane_data_5min_avg_{dt.year}", names=FOCAL_COLUMNS)
+        focal_temp_table = vstack([focal_temp_table, add_table])
+    else:
+        focal_temp_table = ascii.read(f"{focal_dir}/focal_plane_data_5min_avg_{dt.year}", names=FOCAL_COLUMNS)
+    #
+    # --- Cut table to time period of one week starting six days before dt and ending at the end of the day of dt
+    #
+    start = CxoTime(dt - timedelta(days=6))
+    stop = CxoTime(dt + timedelta(seconds = 86399))
+    sel = np.logical_and(focal_temp_table['cxotime'] > start.secs, focal_temp_table['cxotime'] < stop.secs)
+    return focal_temp_table[sel]
 
 def read_orbit_data(tstart, tstop):
     """
@@ -159,8 +134,8 @@ def select_data_by_date(x, y, tstart, tstop):
     output: x       --- a list of time data selected
             y       --- a list of data selected
     """
-    x   = numpy.array(x)
-    y   = numpy.array(y)
+    x   = np.array(x)
+    y   = np.array(y)
     ind = (x > tstart) & (x < tstop)
     x   = list(x[ind])
     y   = list(y[ind])
