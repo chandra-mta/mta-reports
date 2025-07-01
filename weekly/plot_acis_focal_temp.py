@@ -50,11 +50,7 @@ def plot_acis_focal_temp(dt, pathing_dict):
     """
 
     focal_temp_table = read_focal_temp(dt, pathing_dict)
-    orbit_data_table = read_orbit_data(dt, pathing_dict)
-#
-#--- convert altitude to normalized to sun angle (range between 0 and 180)
-#
-    alt                = compute_norm_alt(alt)
+    orbit_data_table = read_orbit_data(dt)
 #
 #--- plot data
 #
@@ -64,6 +60,15 @@ def plot_acis_focal_temp(dt, pathing_dict):
     plot_data(ftime, focal, atime, alt, sang, ltime[0], ltime[1], xlabel)
 
 def read_focal_temp(dt, pathing_dict):
+    """Read ACIS_ft focal plane data into astropy table
+
+    :param dt: datetime for the ending day of the weeklong period
+    :type dt: DateTime
+    :param pathing_dict: dictionary containing file system paths
+    :type pathing_dict: dict
+    :return: table of acis focal plane data
+    :rtype: astropy.table.Table
+    """
 
     focal_dir = pathing_dict['FOCAL_DIR']
     if dt.timetuple().tm_yday < 8:
@@ -81,12 +86,15 @@ def read_focal_temp(dt, pathing_dict):
     sel = np.logical_and(focal_temp_table['cxotime'] > cxostart.secs, focal_temp_table['cxotime'] < cxostop.secs)
     return focal_temp_table[sel]
 
-def read_orbit_data(dt, pathing_dict):
-    """
-    read altitude and sun angle data
-    input:  tstart  --- starting time in seconds from 1998.1.1
-            tstop   --- stopping time in seconds from 1998.1.1
-    output: data    --- a list of lists of [time alt, sun_angle]
+def read_orbit_data(dt):
+    """Read altitude and sun angle data, then compute normalized altitude
+
+    :param dt: datetime for the ending day of the weeklong period
+    :type dt: DateTime
+    :return: table of orbit data including normalized altitude
+    :rtype: astropy.table.Table
+
+    :Note: https://en.wikipedia.org/wiki/Feature_scaling#Rescaling_(min-max_normalization)
     """
 
     cxostart = CxoTime(dt - timedelta(days=6))
@@ -103,6 +111,12 @@ def read_orbit_data(dt, pathing_dict):
     hout = pyfits.open(fits)
     orbit_data_table = Table(hout[1].data)
     os.remove(fits)
+#
+# --- Normalize the sc_altitude to sun angle (range between 0 and 180) using min-max normalization
+#
+    alt = orbit_data_table['sc_altitude']
+    norm = 180 * (alt - min(alt)) / (max(alt) - min(alt))
+    orbit_data_table.add_column(norm, name = 'norm_sc_altitude')
     return orbit_data_table
 
 def select_data_by_date(x, y, tstart, tstop):
@@ -122,21 +136,6 @@ def select_data_by_date(x, y, tstart, tstop):
     y   = list(y[ind])
 
     return [x, y]
-
-def compute_norm_alt(v, nval=180.):
-    """
-    normalize the data to a given max size
-    input:  v       --- a list of the data
-            nval    --- the max value; default = 180
-    output: v       --- a list of the data normlaized
-    """
-    vmin = min(v)
-    vmax = max(v)
-    v    = v - vmin
-    v    = v / (vmax - vmin)
-    v    = v * nval
-
-    return list(v)
 
 def convert_time_format(otime):
     """
