@@ -11,7 +11,7 @@ an interruption in the Chandra mission plan.
 
 Reports can be found here.
 
-https://cxc.cfa.harvard.edu/mta/RADIATION_new/mta_interrupt/index.html
+https://cxc.cfa.harvard.edu/mta/RADIATION/mta_interrupt/index.html
 
 
 Run Interruption
