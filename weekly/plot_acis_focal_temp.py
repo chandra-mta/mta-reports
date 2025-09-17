@@ -1,95 +1,56 @@
 #!/proj/sot/ska3/flight/bin/python
 
-#############################################################################################
-#                                                                                           #
-#           plot_acis_focal_temp.py: plot acis focal temperature trend                      #
-#                                                                                           #
-#               author: t. isobe (tisobe@cfa.harvard.edu)                                   #
-#                                                                                           #
-#               last update: Mar 15, 2021                                                   #
-#                                                                                           #
-#############################################################################################
+"""
+**plot_acis_focal_temp.py** Plot acis focal temperature trend
 
+:Author: W. Aaron (william.aaron@cfa.harvard.edu)
+:Last Updated: Jun 13, 2025
+
+"""
 import os
-import sys
 import re
-import time
-import numpy
+from astropy.io import ascii
+from astropy.table import vstack, Table
+from cxotime import CxoTime
+from datetime import timedelta
+import numpy as np
+
 import astropy.io.fits  as pyfits
 import Chandra.Time
-import unittest
 from calendar import isleap
-#
-#--- from ska
-#
-from Ska.Shell import getenv, bash
-ascdsenv = getenv('source /home/ascds/.ascrc -r release; punlearn dataseeker', shell='tcsh')
 #
 #--- plotting routine
 #
 import matplotlib as mpl
 
 if __name__ == '__main__':
-
     mpl.use('Agg')
-
 from pylab import *
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
-import matplotlib.lines as lines
-
-
 #
-#--- Define directory pathing
+#--- from ska
 #
-BIN_DIR = "/data/mta/Script/Weekly/Scripts"
-DATA_DIR = "/data/mta/Script/Weekly/Data"
-FOCAL_DIR = "/data/mta/Script/ACIS/Focal/Data"
-
-sys.path.append(BIN_DIR)
+from Ska.Shell import getenv, bash
+ASCDSENV = getenv('source /home/ascds/.ascrc -r release; punlearn dataseeker', shell='tcsh')
 #
-#--- set column names and header
+#--- Define Globals
 #
-orb_col_list  = ['time', 'x', 'y', 'z']
-ang_col_list  = ['time','point_suncentang']
-lfile = f"{BIN_DIR}/house_keeping/loginfile"
+LOGINFILE = "/home/mta/loginfile"
+FOCAL_COLUMNS = ['cxotime', 'focal', '1crat', '1crbt']
 
-#-----------------------------------------------------------------------------------------------
-#-- plot_acis_focal_temp: plot acis focal temperature                                        ---
-#-----------------------------------------------------------------------------------------------
+def plot_acis_focal_temp(dt, pathing_dict):
+    """Plot acis focal temperature; the plotting range is the last 7 days
 
-def plot_acis_focal_temp(tyear='', yday=''):
+    :param dt: datetime for the ending day of the weeklong period
+    :type dt: DateTime
+    :param pathing_dict: dictionary containing file system paths
+    :type pathing_dict: dict
+    :File Out: <data_dir>/Focal/acis_focal_temp.png 
     """
-    plot acis focal temperature; the plotting range is the last 7 days
-    input:  none, but read from several database
-    output: ./acis_focal_temp.png
-    """
-    if tyear == '':
-        tyear  = int(float(time.strftime('%Y', time.gmtime())))
-        yday   = int(float(time.strftime('%j', time.gmtime())))
-        today  = time.strftime('%Y:%j:00:00:00', time.gmtime())
-    else:
-        today = f"{tyear}:{yday:03}:00:00:00"
 
-    cdate  = Chandra.Time.DateTime(today).secs
-    cstart = cdate - 86400.0 * 7.0
-#
-#--- extract focal temp data
-#
-    [ftime, focal]     = read_focal_temp(tyear, yday, cstart, cdate)
-#
-#--- convert time format to yday
-#
-    [ftime, byear]     = convert_time_format(ftime)
-#
-#--- extract altitude data and sun angle data
-#
-    [atime, alt, sang] = read_orbit_data(cstart, cdate)
-    [atime, byear]     = convert_time_format(atime)
-#
-#--- convert alttude to normalized to sun angle (range between 0 and 180)
-#
-    alt                = compute_norm_alt(alt)
+    focal_temp_table = read_focal_temp(dt, pathing_dict)
+    orbit_data_table = read_orbit_data(dt)
 #
 #--- plot data
 #
@@ -98,86 +59,65 @@ def plot_acis_focal_temp(tyear='', yday=''):
 
     plot_data(ftime, focal, atime, alt, sang, ltime[0], ltime[1], xlabel)
 
-#-----------------------------------------------------------------------------------------------
-#-- read_focal_temp: read focal plane temperature data                                        --
-#-----------------------------------------------------------------------------------------------
+def read_focal_temp(dt, pathing_dict):
+    """Read ACIS_ft focal plane data into astropy table
 
-def read_focal_temp(tyear, yday, tstart, tstop):
+    :param dt: datetime for the ending day of the weeklong period
+    :type dt: DateTime
+    :param pathing_dict: dictionary containing file system paths
+    :type pathing_dict: dict
+    :return: table of acis focal plane data
+    :rtype: astropy.table.Table
     """
-    read focal plane temperature data
-    input:  tyear   --- this year
-            yday    --- today's y date
-            tstart  --- starting time in seconds from 1998.1.1
-            tstop   --- stopping time in seconds from 1998.1.1
-    output: ftime   --- a list of time 
-            focal   --- a list of focal temp
-    """
-#
-#--- if y daay is less than 8, read the data from the last year
-#
-    if yday < 8:
-        ifile = f"{FOCAL_DIR}/focal_plane_data_5min_avg_{tyear-1}"
-        data   = read_data_file(ifile, sep='\s+', c_len=2)
-        ftime  = data[0]
-        focal  = data[1]
+
+    focal_dir = pathing_dict['FOCAL_DIR']
+    if dt.timetuple().tm_yday < 8:
+        #: Change of year
+        focal_temp_table = ascii.read(f"{focal_dir}/focal_plane_data_5min_avg_{dt.year-1}", names=FOCAL_COLUMNS)
+        add_table = ascii.read(f"{focal_dir}/focal_plane_data_5min_avg_{dt.year}", names=FOCAL_COLUMNS)
+        focal_temp_table = vstack([focal_temp_table, add_table])
     else:
-        ftime  = []
-        focal  = []
-#
-#--- otherwise, just read this year
-#
-    ifile = f"{FOCAL_DIR}/focal_plane_data_5min_avg_{tyear}"
-    data   = read_data_file(ifile, sep='\s+', c_len=2)
-    ftime  = ftime + data[0]
-    focal  = focal + data[1]
-#
-#--- select out the data for the last 7 days
-#
-    [ftime, focal] = select_data_by_date(ftime, focal, tstart, tstop)
+        focal_temp_table = ascii.read(f"{focal_dir}/focal_plane_data_5min_avg_{dt.year}", names=FOCAL_COLUMNS)
+    #
+    # --- Cut table to time period of one week starting six days before dt and ending at the end of the day of dt
+    #
+    cxostart = CxoTime(dt - timedelta(days=6))
+    cxostop = CxoTime(dt + timedelta(seconds = 86399))
+    sel = np.logical_and(focal_temp_table['cxotime'] > cxostart.secs, focal_temp_table['cxotime'] < cxostop.secs)
+    return focal_temp_table[sel]
 
-    return [ftime, focal]
+def read_orbit_data(dt):
+    """Read altitude and sun angle data, then compute normalized altitude
 
-#-----------------------------------------------------------------------------------------------
-#-- read_orbit_data: read altitude and sun angle data                                        ---
-#-----------------------------------------------------------------------------------------------
+    :param dt: datetime for the ending day of the weeklong period
+    :type dt: DateTime
+    :return: table of orbit data including normalized altitude
+    :rtype: astropy.table.Table
 
-def read_orbit_data(tstart, tstop):
+    :Note: https://en.wikipedia.org/wiki/Feature_scaling#Rescaling_(min-max_normalization)
     """
-    read altitude and sun angle data
-    input:  tstart  --- starting time in seconds from 1998.1.1
-            tstop   --- stopping time in seconds from 1998.1.1
-    output: data    --- a list of lists of [time alt, sun_angle]
-    """
-#
-#--- set up the input for dataseeker and extract the data
-#
-    fits = 'dataseek_avg.fits'
-    cmd  = 'touch infile'
-    os.system(cmd)
 
-    cmd1 = '/usr/bin/env PERL5LIB=  '
-    cmd2 = " dataseeker.pl infile=infile outfile=" + fits + " "
-    cmd2 = cmd2 + "search_crit='columns=pt_suncent_ang,sc_altitude timestart=" + str(tstart)
-    cmd2 = cmd2 + " timestop=" + str(tstop) + "' loginFile=" + lfile
-
-    cmd  = cmd1 + cmd2
-    bash(cmd, env=ascdsenv)
+    cxostart = CxoTime(dt - timedelta(days=6))
+    cxostop = CxoTime(dt + timedelta(seconds = 86399))
+    #: Dataseeker only outputs to intermediate fits file. Therefore generate file with default name and running date, then clean after read
+    fits = f"dataseek_{dt.strftime('%Y_%m_%d')}.fits"
+    cmd = f"dataseeker.pl outfile={fits} "
+    cmd += f"search_crit='columns=pt_suncent_ang,sc_altitude timestart={cxostart.secs} timestop={cxostop.secs} "
+    cmd += f"loginFile={LOGINFILE}"
+    bash(cmd, env=ASCDSENV)
 #
 #--- read fits file and extract the data
 #
-    cols = ['time', 'sc_altitude', 'pt_suncent_ang']
-    data = read_fits_data(fits, cols)
-#
-#--- clean up
-#
+    hout = pyfits.open(fits)
+    orbit_data_table = Table(hout[1].data)
     os.remove(fits)
-    os.remove('infile')
-
-    return data
-
-#-----------------------------------------------------------------------------------------------
-#-- select_data_by_date: selet out the potion of the data by time                             --
-#-----------------------------------------------------------------------------------------------
+#
+# --- Normalize the sc_altitude to sun angle (range between 0 and 180) using min-max normalization
+#
+    alt = orbit_data_table['sc_altitude']
+    norm = 180 * (alt - min(alt)) / (max(alt) - min(alt))
+    orbit_data_table.add_column(norm, name = 'norm_sc_altitude')
+    return orbit_data_table
 
 def select_data_by_date(x, y, tstart, tstop):
     """
@@ -189,36 +129,13 @@ def select_data_by_date(x, y, tstart, tstop):
     output: x       --- a list of time data selected
             y       --- a list of data selected
     """
-    x   = numpy.array(x)
-    y   = numpy.array(y)
+    x   = np.array(x)
+    y   = np.array(y)
     ind = (x > tstart) & (x < tstop)
     x   = list(x[ind])
     y   = list(y[ind])
 
     return [x, y]
-
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
-
-def compute_norm_alt(v, nval=180.):
-    """
-    normalize the data to a given max size
-    input:  v       --- a list of the data
-            nval    --- the max value; default = 180
-    output: v       --- a list of the data normlaized
-    """
-    vmin = min(v)
-    vmax = max(v)
-    v    = v - vmin
-    v    = v / (vmax - vmin)
-    v    = v * nval
-
-    return list(v)
-
-#-----------------------------------------------------------------------------------------------
-#-- convert_time_format: convert a list of the time data into ydate                           --
-#-----------------------------------------------------------------------------------------------
 
 def convert_time_format(otime):
     """
@@ -253,10 +170,6 @@ def convert_time_format(otime):
                 save.append(yday)
 
     return [save, prev]
-
-#-----------------------------------------------------------------------------------------------
-#-- read_data_file: read ascii data file                                                      --
-#-----------------------------------------------------------------------------------------------
 
 def read_data_file(ifile, sep='', remove=0, c_len=0):
     """
@@ -293,10 +206,6 @@ def read_data_file(ifile, sep='', remove=0, c_len=0):
     
     else:
         return data
-
-#-----------------------------------------------------------------------------------------------
-#-- plot_data: plot data                                                                      --
-#-----------------------------------------------------------------------------------------------
 
 def plot_data(ftime, ftemp, stime, alt, sang, xmin, xmax, xlabel):
     """
@@ -388,10 +297,6 @@ def plot_data(ftime, ftemp, stime, alt, sang, xmin, xmax, xlabel):
 
     plt.close('all')
 
-#-----------------------------------------------------------------------------------------------
-#-- set_focal_temp_range: setting the focal temp plotting range                               --
-#-----------------------------------------------------------------------------------------------
-
 def set_focal_temp_range(v):
     """
     setting the focal temp plotting range
@@ -412,105 +317,3 @@ def set_focal_temp_range(v):
     vmax = int(vmax + 0.02 * diff)
 
     return [vmin, vmax]
-
-
-#-------------------------------------------------------------------------------------------------
-#-- read_fits_data: read fits data                                                              --
-#-------------------------------------------------------------------------------------------------
-
-def read_fits_data(fits, cols):
-    """
-    read fits data
-    input:  fits    --- fits file name
-            cols    --- a list of col names to be extracted
-    output: save    --- a list of lists of data extracted
-    """
-
-    hout = pyfits.open(fits)
-    data = hout[1].data
-    hout.close()
-
-    save = []
-    for col in cols:
-        out = data[col]
-        save.append(out)
-
-    return save
-
-    
-
-#-----------------------------------------------------------------------------------------
-#-- TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST    ---
-#-----------------------------------------------------------------------------------------
-
-class TestFunctions(unittest.TestCase):
-    """
-    testing functions
-    """
-#------------------------------------------------------------
-
-    def test_read_focal_temp(self):
-
-        year   = 2018
-        yday   = 5
-        cdate  = Chandra.Time.DateTime('2018:005:00:00:00').secs
-        cstart = cdate - 86400.0 * 7.0
-
-        [x, y] = read_focal_temp(year, yday, cstart, cdate)
-
-        print('Focal: ' + str(len(x)) + '<-->' + str(x[:10]) + '<-->' +  str(y[:10]))
-
-
-#------------------------------------------------------------
-
-    def test_read_orbit_data(self):
-
-        year   = 2018
-        yday   = 5
-        cdate  = Chandra.Time.DateTime('2018:005:00:00:00').secs
-        cstart = cdate - 86400.0 * 7.0
-
-        [x, y, y2] = read_orbit_data(cstart, cdate)
-
-        print('Alt: ' + str(len(x)) + '<-->' + str(x[:10]) + '<-->' +  str(y[:10]))
-
-
-#------------------------------------------------------------
-#
-#    def test_read_sunangle(self):
-#
-#        year   = 2018
-#        yday   = 5
-#        cdate  = Chandra.Time.DateTime('2018:005:00:00:00').secs
-#        cstart = cdate - 86400.0 * 7.0
-#
-#        [x, y] = read_sunangle(cstart, cdate)
-#
-#        print('Sun Angle: ' + str(len(x)) + '<-->' + str(x[:10]) + '<-->' +  str(y[:10]))
-
-
-
-
-
-#-----------------------------------------------------------------------------------------------
-
-if __name__ == '__main__':
-
-    #unittest.main()
-    #exit(1)
-    if len(sys.argv) == 3:
-        year = int(float(sys.argv[1]))
-        yday = int(float(sys.argv[2]))
-    else:
-        year = ''
-        yday = ''
-
-    plot_acis_focal_temp(year, yday)
-
-
-
-
-
-
-
-

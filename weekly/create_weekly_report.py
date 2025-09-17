@@ -1,20 +1,16 @@
 #!/proj/sot/ska3/flight/bin/python
+"""
+**create_weekly_report.py** Extract instrumentation data on Chandra and compile into weekly report
 
-#############################################################################
-#                                                                           #
-#           create_weekly_report.py: create weekly report                   #
-#                                                                           #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                       #
-#                                                                           #
-#           Last Update: Oct 12, 2022                                       #
-#                                                                           #
-#############################################################################
+:Author: W. Aaron (william.aaron@cfa.harvard.edu)
+:Last Updated: Jun 12, 2025
 
+"""
 import sys
 import os
 import re
 import time
-import datetime
+from datetime import datetime, timedelta
 import Chandra.Time
 import argparse
 import getpass
@@ -28,40 +24,42 @@ DATA_DIR = "/data/mta/Script/Weekly/Data"
 WEB_DIR = "/data/mta4/www/REPORTS"
 CTI_DIR = "/data/mta_www/mta_cti"
 SIM_DATA_DIR = "/data/mta/Script/SIM_move/Data"
-sys.path.append(BIN_DIR)
+FOCAL_DIR = "/data/mta/Script/ACIS/Focal/Data"
+
+PATHING_DICT = {
+    "BIN_DIR": BIN_DIR,
+    "TEMPLATE_DIR": TEMPLATE_DIR,
+    "DATA_DIR": DATA_DIR,
+    "WEB_DIR": WEB_DIR,
+    "CTI_DIR": CTI_DIR,
+    "SIM_DATA_DIR": SIM_DATA_DIR,
+    "FOCAL_DIR": FOCAL_DIR
+}
 
 import find_focal_temp_peaks    as fftp
 import plot_acis_focal_temp     as paft
 import create_telem_table       as ctt
 import create_bad_pixel_table   as cbpt
 import find_recent_observations as frobs
-from calendar import month_abbr
+from calendar import month_abbr, THURSDAY
 
 #
 #--- admin email addresses (list) including those passed through sys args
 #
 ADMIN  = ['mtadude@cfa.harvard.edu']
 #
-#--- ephin linst
-#
-ephtv_list = ['5EIOT', '5EPHINT', 'HKEBOXTEMP', 'HKGHV', 'HKN6I', 'HKN6V', 'HKP27I',\
-              'HKP27V', 'HKP5I', 'HKP5V', 'HKP6I', 'HKP6V', 'TEIO', 'TEPHIN']
-#
 #--- instrument trend list
 #
-inst_list = ['SIM', 'PCAD', 'Ground Computed Gradients', 'Spacecraft Bus and Subsystem Trends',\
+INST_LIST = ['SIM', 'PCAD', 'Ground Computed Gradients', 'Spacecraft Bus and Subsystem Trends',\
              'OBA Thermal', 'HRMA Thermal', 'Gratings', 'ACIS', 'HRC', 'Ground Computations', 'EPHIN']
+TIME_FORMATS = ['%Y:%m:%d', '%Y/%m/%d',"%Y:%j:%H:%M:%S", "%Y:%m:%d:%H:%M:%S"]
 
-#------------------------------------------------------------------------------------------
-#-- create_weekly_report: main script to create the weekly report for the week          ---
-#------------------------------------------------------------------------------------------
 
-def create_weekly_report(date, year, debug = 0):
+def create_weekly_report(dt, pathing_dict):
     """
     main script to set up the weekly report template for the week
     input:  date    --- date in the format of mmdd (e.g. 0910)
             year    --- year in the format of yyyy (e.g. 2015)
-            debug   --- if it is other than 0, print out some output
     output: weekly report /data/mta4/www/REPORT/<yyyy>/<mm><dd>.html
                           /data/mta4/www/REPORT/<yyyy>/<mm><dd>_fptemp.png
             it also creates local copies in <data_dir>
@@ -162,7 +160,7 @@ def create_weekly_report(date, year, debug = 0):
 #
 #--- focal temp file name
 #
-    paft.plot_acis_focal_temp(year, ydate)
+    paft.plot_acis_focal_temp(dt, pathing_dict)
     fftp.find_focal_temp_peaks(year, mon, day, 0.3)
 
     fptemp        = file_date + '_fptemp.png'
@@ -201,22 +199,7 @@ def create_weekly_report(date, year, debug = 0):
     s1 = sday0[0:3] + ' ' + sday0[3:5]
     s2 = sday6[0:3] + ' ' + sday6[3:5]
     index = '<td> <a href="./' + str(year) + '/' + file_date + '.html">' + s1 + ' - ' + s2 + '</a>'
-#
-#--- debugging output
-#
-    if debug != 0:
-        print("file_name; "       + file_name )
-        print("title date: "      + titledate)
-        print("ldate: "           + ldate)
-        print("fptemp: "          + fptemp)
-        print("fpext_range: "     + fpext_range)
-        print("fpstart: "         + fpstart)
-        print(" fplsub: "         + fplsub)
-        print(" fpdsub: "         + fpdsub)
-        print("irudate: "         + irudate)
-        print("title: "           + title)
-        print("last_trend_date: " + last_trend_date)
-        print("index: "           + index)
+
 #
 #--- create a work directory
 #
@@ -668,8 +651,9 @@ def send_email_to_admin(date, year):
 def send_error_to_admin(e):
     """
     send out a notification email to admin
-    input:  e        --- sys.exception() error tracestack
-    output: email to admin
+
+    :param e: sys.exception() error tracestack
+    
     """
     et = time.localtime()
     dt_string = f"{et.tm_year}/{et.tm_mon}/{et.tm_mday} {et.tm_hour}:{et.tm_min}"
@@ -678,27 +662,6 @@ def send_error_to_admin(e):
 
     os.system(f'echo "{line}" | mailx -s "Error in Weekly Report Script: {dt_string}" {" ".join(ADMIN)}')
 
-#----------------------------------------------------------------------------------
-#-- find_date_and_year_for_report: find nearest Thursday date                    --
-#----------------------------------------------------------------------------------
-
-def find_date_and_year_for_report():
-    """
-    find nearest Thursday date 
-    input:  none
-    output: date    --- date of the nearest Thu in the format of mmdd (e.g. 0910)
-            year    --- year of the nearest Thu
-    """
-    now = datetime.datetime.now()
-    thurs = diff = (3 - now.weekday()) % 7
-    if diff > 0:
-        diff -= 7
-    thurs = now + datetime.timedelta(days = diff)
-    return [f"{thurs.month:02}{thurs.day:02}", f"{thurs.year}"]
-
-#-------------------------------------------------------------------------------
-#- create_html_table: create table msid entries of the group                 ---
-#-------------------------------------------------------------------------------
 
 def create_html_table(group, disp, msid_list):
     """
@@ -880,7 +843,7 @@ def find_inst_trend_name(cdate=''):
 #
 #--- find which instrument is due on that date
 #
-    dlen  = len(inst_list)
+    dlen  = len(INST_LIST)
     dspan = dlen * day7
     diff  = last_thu_s - base_time
 
@@ -891,7 +854,7 @@ def find_inst_trend_name(cdate=''):
 
     tdiff = int(diff / day7)
     pos = int(tdiff - dlen*int(tdiff /dlen))
-    inst = inst_list[pos]
+    inst = INST_LIST[pos]
 #
 #--- date of that Thu
 #
@@ -922,7 +885,28 @@ def convert_stime_to_trend_date(stime):
 
     return dtime
 
-#------------------------------------------------------------------------------------------
+def get_recent_weekday(w = THURSDAY, dt = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)):
+    """
+    Return the target weekday which most recently occured to the provided date.
+
+    :param w: Target weekday, defaults to THURSDAY
+    :type w: int, optional
+    :param dt: Provided date, defaults to datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    :type dt: DateTime, optional
+    :NOTE: Weekday numbering. Monday is 0. Sunday is 6.
+
+    """
+    if isinstance(dt,str):
+        for format in TIME_FORMATS:
+            try:
+                dt = datetime.strptime(dt, format)
+                break
+            except ValueError:
+                pass
+    elif dt is None:
+        dt = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    diff = dt.weekday() - w
+    return dt - timedelta(days=diff%7)
 
 if __name__ == "__main__":
 #
@@ -938,24 +922,7 @@ if __name__ == "__main__":
 #
 #--- Determine Date Information
 #
-
-    if args.date:
-        date_info = args.date.split("/")
-        if len(date_info) != 3:
-            parser.error(f"Provided date: {args.date} must be in yyyy/mm/dd format")
-        year = date_info[0]
-        date = date_info[1] + date_info[2]
-    else:
-#
-#--- If date is not provided, find the nearest thursday
-#
-        try:
-            [date, year] = find_date_and_year_for_report()
-            print(f"Weekly Report Date: {year}/{date}")
-        except Exception as exc:
-            e = ''.join(traceback.format_exception(exc))
-            send_error_to_admin(e)
-            traceback.print_exc()
+    dt = get_recent_weekday(dt = args.date)
 
     if args.mode == "test":
 #
@@ -968,7 +935,7 @@ if __name__ == "__main__":
 #
 #--- Redefine Admin for sending notification email in test mode
 #       
-        if args.email != None:
+        if args.email is not None:
             ADMIN = args.email
         else:
             ADMIN = [os.popen(f"getent aliases | grep {getpass.getuser()} ").read().split(":")[1].strip()]
@@ -978,7 +945,7 @@ if __name__ == "__main__":
 #
         BIN_DIR = f"{os.getcwd()}"
         TEMPLATE_DIR = f"{BIN_DIR}/Templates"
-        OUT_DIR = f"{BIN_DIR}/test/outTest"
+        OUT_DIR = f"{BIN_DIR}/test/_outTest"
         if args.path:
             OUT_DIR = args.path
         DATA_DIR = f"{OUT_DIR}/Data"
@@ -986,18 +953,15 @@ if __name__ == "__main__":
         os.makedirs(DATA_DIR, exist_ok = True)
         os.makedirs(f"{DATA_DIR}/Focal", exist_ok = True)
         os.makedirs(WEB_DIR, exist_ok = True)
-#
-#--- Cycle thorugh imported modules, changing their global pathing
-#
-        mod_group = [fftp, paft, ctt, cbpt, frobs]
-        for mod in mod_group:
-            if hasattr(mod, 'BIN_DIR'):
-                mod.BIN_DIR = BIN_DIR
-            if hasattr(mod, 'DATA_DIR'):
-                mod.DATA_DIR = DATA_DIR
-            if hasattr(mod, 'WEB_DIR'):
-                mod.WEB_DIR = WEB_DIR
-        create_weekly_report(date, year)
+
+        PATHING_DICT.update({
+            "BIN_DIR": BIN_DIR,
+            "TEMPLATE_DIR": TEMPLATE_DIR,
+            "DATA_DIR": DATA_DIR,
+            "WEB_DIR": WEB_DIR,
+        })
+
+        create_weekly_report(dt, PATHING_DICT)
 
     else:
 #
@@ -1011,7 +975,7 @@ if __name__ == "__main__":
             else:
                 os.system(f"mkdir -p /tmp/{user}; touch /tmp/{user}/{name}.lock")
             
-            create_weekly_report(date, year)
+            create_weekly_report(dt, PATHING_DICT)
 #
 #--- Remove lock file once process is completed
 #
